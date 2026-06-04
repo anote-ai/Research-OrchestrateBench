@@ -1,33 +1,57 @@
-"""Tests for orchestratebench.data."""
+"""Tests for orchestratebench data helpers."""
 
-import pytest
-from orchestratebench.core import AgentTask, ExecutionTrace
+from __future__ import annotations
+
 from orchestratebench.data import (
-    SAMPLE_TASKS_RAW,
     make_benchmark_tasks,
-    make_execution_trace,
+    make_devops_deploy_workflow,
+    make_finance_approval_workflow,
+    make_hr_onboarding_workflow,
     make_task,
 )
 
 
-def test_sample_tasks_raw_length():
-    assert len(SAMPLE_TASKS_RAW) == 8
+def test_make_task_defaults() -> None:
+    t = make_task("hello")
+    assert t.description == "hello"
+    assert t.complexity_score == 0.5
 
 
-def test_make_task_returns_agent_task():
-    t = make_task("do something", complexity=0.6)
-    assert isinstance(t, AgentTask)
-    assert t.complexity_score == pytest.approx(0.6)
+def test_make_benchmark_tasks_count() -> None:
+    tasks = make_benchmark_tasks(n=10)
+    assert len(tasks) == 10
 
 
-def test_make_benchmark_tasks_count():
-    tasks = make_benchmark_tasks(n=15, seed=1)
-    assert len(tasks) == 15
-    assert all(isinstance(t, AgentTask) for t in tasks)
+def test_make_benchmark_tasks_deterministic() -> None:
+    t1 = make_benchmark_tasks(n=5, seed=99)
+    t2 = make_benchmark_tasks(n=5, seed=99)
+    assert [t.description for t in t1] == [t.description for t in t2]
 
 
-def test_make_execution_trace_returns_trace():
-    task = make_task("demo task")
-    trace = make_execution_trace(task, success=True)
-    assert isinstance(trace, ExecutionTrace)
-    assert trace.success is True
+def test_finance_approval_workflow_length() -> None:
+    tasks = make_finance_approval_workflow()
+    assert len(tasks) == 4
+
+
+def test_hr_onboarding_workflow_length() -> None:
+    tasks = make_hr_onboarding_workflow()
+    assert len(tasks) == 5
+
+
+def test_devops_deploy_workflow_length() -> None:
+    tasks = make_devops_deploy_workflow()
+    assert len(tasks) == 5
+
+
+def test_workflow_dependencies_valid() -> None:
+    """All dependency IDs in workflow tasks must refer to tasks in the workflow."""
+    for make_fn in [
+        make_finance_approval_workflow,
+        make_hr_onboarding_workflow,
+        make_devops_deploy_workflow,
+    ]:
+        tasks = make_fn()
+        ids = {t.task_id for t in tasks}
+        for task in tasks:
+            for dep in task.dependencies:
+                assert dep in ids, f"Unknown dependency {dep} in {make_fn.__name__}"
