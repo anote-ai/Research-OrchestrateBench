@@ -2,8 +2,8 @@
 
 from __future__ import annotations
 
+import hashlib
 import random
-import time
 import uuid
 from enum import Enum
 from typing import Any, Callable, Dict, List, Optional, Set
@@ -88,6 +88,7 @@ class ExecutionTrace(BaseModel):
     status: TaskStatus = TaskStatus.SUCCESS
     n_subagent_calls: int = 0
     retries: List[RetryRecord] = Field(default_factory=list)
+    dependencies_declared: List[str] = Field(default_factory=list)
     dependencies_resolved: List[str] = Field(default_factory=list)
 
     @property
@@ -100,6 +101,22 @@ class DependencyGraph:
 
     def __init__(self, tasks: List[AgentTask]) -> None:
         self._tasks: Dict[str, AgentTask] = {t.task_id: t for t in tasks}
+        self._validate_dependencies()
+
+    def _validate_dependencies(self) -> None:
+        missing: Dict[str, List[str]] = {}
+        for task in self._tasks.values():
+            unknown = [dep for dep in task.dependencies if dep not in self._tasks]
+            if unknown:
+                missing[task.task_id] = unknown
+        if missing:
+            parts = [
+                f"{task_id} -> {', '.join(deps)}"
+                for task_id, deps in sorted(missing.items())
+            ]
+            raise ValueError(
+                "Dependency graph contains unknown task IDs: " + "; ".join(parts)
+            )
 
     def topological_order(self) -> List[str]:
         """Return task IDs in a valid execution order (Kahn's algorithm)."""
@@ -238,15 +255,38 @@ class RetryPolicy:
 
 
 def _default_simulate(action: OrchestratorAction, seed: int = 42) -> ExecutionTrace:
-    rng = random.Random(seed + hash(action.task_id) % 10000)
+    stable_task_seed = int(hashlib.sha256(action.task_id.encode("utf-8")).hexdigest()[:12], 16)
+    rng = random.Random(seed + stable_task_seed)
+    profile = {
+        RoutingDecision.REASON_ONLY: {
+            "latency": (100.0, 500.0),
+            "cost": (0.001, 0.008),
+            "subagent_calls": (0, 0),
+        },
+        RoutingDecision.DIRECT_TOOL: {
+            "latency": (350.0, 1000.0),
+            "cost": (0.004, 0.018),
+            "subagent_calls": (1, 1),
+        },
+        RoutingDecision.CODE_EXECUTION: {
+            "latency": (900.0, 1800.0),
+            "cost": (0.010, 0.030),
+            "subagent_calls": (1, 2),
+        },
+        RoutingDecision.DECOMPOSE: {
+            "latency": (1500.0, 2600.0),
+            "cost": (0.020, 0.055),
+            "subagent_calls": (2, 4),
+        },
+    }[action.decision]
     return ExecutionTrace(
         task_id=action.task_id,
         actions=[action],
-        total_latency_ms=rng.uniform(100, 2000),
-        total_cost_usd=rng.uniform(0.001, 0.05),
+        total_latency_ms=rng.uniform(*profile["latency"]),
+        total_cost_usd=rng.uniform(*profile["cost"]),
         success=True,
         status=TaskStatus.SUCCESS,
-        n_subagent_calls=1,
+        n_subagent_calls=rng.randint(*profile["subagent_calls"]),
     )
 
 
@@ -273,6 +313,7 @@ class OrchestratorBench:
                 trace = simulate_fn(action)
             else:
                 trace = self._default_simulate(action, seed=i)
+            trace.dependencies_declared = list(task.dependencies)
             traces.append(trace)
         return traces
 
@@ -308,7 +349,12 @@ class OrchestratorBench:
                     total_cost_usd=0.0,
                     success=False,
                     status=TaskStatus.SKIPPED,
-                    dependencies_resolved=list(task.dependencies),
+                    dependencies_declared=list(task.dependencies),
+                    dependencies_resolved=[
+                        dep
+                        for dep in task.dependencies
+                        if dep in completed and completed[dep].success
+                    ],
                 )
                 completed[tid] = skipped
                 traces.append(skipped)
@@ -318,6 +364,7 @@ class OrchestratorBench:
                 trace = simulate_fn(action)
             else:
                 trace = self._default_simulate(action, seed=len(traces))
+            trace.dependencies_declared = list(task.dependencies)
             trace.dependencies_resolved = list(task.dependencies)
             completed[tid] = trace
             traces.append(trace)

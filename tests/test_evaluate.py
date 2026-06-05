@@ -93,9 +93,19 @@ def test_task_dependency_score_no_deps() -> None:
 
 def test_task_dependency_score_with_deps() -> None:
     traces = _make_traces(3)
-    traces[0].dependencies_resolved = ["dep-a", "dep-b"]
+    traces[0].dependencies_declared = ["dep-a", "dep-b"]
+    traces[0].dependencies_resolved = ["dep-a"]
     score = task_dependency_score(traces)
-    assert 0.0 <= score <= 1.0
+    assert score == (0.5 + 1.0 + 1.0) / 3
+
+
+def test_task_dependency_score_skipped_trace_is_penalized() -> None:
+    traces = _make_traces(2)
+    traces[1].status = TaskStatus.SKIPPED
+    traces[1].dependencies_declared = ["dep-a", "dep-b"]
+    traces[1].dependencies_resolved = ["dep-a"]
+    score = task_dependency_score(traces)
+    assert score == 0.75
 
 
 def test_mean_retry_rate_zero() -> None:
