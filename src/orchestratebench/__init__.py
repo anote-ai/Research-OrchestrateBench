@@ -40,6 +40,12 @@ from .evaluate import (
     task_dependency_score,
     throughput_score,
 )
+from .failures import (
+    FailureInjector,
+    FailureMode,
+    measure_cascade,
+    recovery_rate_by_mode,
+)
 from .statistics import (
     bootstrap_ci,
     metric_ci,
@@ -81,6 +87,10 @@ __all__ = [
     "success_rate",
     "task_dependency_score",
     "throughput_score",
+    "FailureInjector",
+    "FailureMode",
+    "measure_cascade",
+    "recovery_rate_by_mode",
     "bootstrap_ci",
     "metric_ci",
     "paired_bootstrap_test",
