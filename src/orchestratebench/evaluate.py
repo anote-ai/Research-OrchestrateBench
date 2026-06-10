@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Dict, List, Optional
 
 from .core import ExecutionTrace, RoutingDecision, TaskStatus
+from .statistics import metric_ci
 
 
 def success_rate(traces: List[ExecutionTrace]) -> float:
@@ -32,10 +33,29 @@ def routing_accuracy(predicted: List[str], reference: List[str]) -> float:
     return matches / len(reference)
 
 
-def policy_comparison(policies: Dict[str, List[ExecutionTrace]]) -> Dict:
+def policy_comparison(
+    policies: Dict[str, List[ExecutionTrace]],
+    with_ci: bool = False,
+    n_resamples: int = 2000,
+    seed: int = 0,
+) -> Dict:
+    """Compare policies on summary metrics.
+
+    When ``with_ci`` is True, each scalar metric gains a companion
+    ``<metric>_ci`` key holding a ``(low, high)`` 95% bootstrap interval, so
+    framework comparisons can report ``mean ± CI``. Defaults to
+    ``with_ci=False`` so existing callers are unaffected.
+    """
+    ci_metrics = (
+        ("success_rate", success_rate),
+        ("mean_latency", mean_latency),
+        ("mean_cost", mean_cost),
+        ("orchestration_efficiency_score", orchestration_efficiency_score),
+        ("task_dependency_score", task_dependency_score),
+    )
     result = {}
     for name, traces in policies.items():
-        result[name] = {
+        metrics: Dict[str, object] = {
             "success_rate": success_rate(traces),
             "mean_latency": mean_latency(traces),
             "mean_cost": mean_cost(traces),
@@ -43,6 +63,11 @@ def policy_comparison(policies: Dict[str, List[ExecutionTrace]]) -> Dict:
             "task_dependency_score": task_dependency_score(traces),
             "n_traces": len(traces),
         }
+        if with_ci:
+            for key, fn in ci_metrics:
+                _, low, high = metric_ci(traces, fn, n_resamples=n_resamples, seed=seed)
+                metrics[f"{key}_ci"] = (low, high)
+        result[name] = metrics
     return result
 
 

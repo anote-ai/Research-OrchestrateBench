@@ -40,6 +40,11 @@ from .evaluate import (
     task_dependency_score,
     throughput_score,
 )
+from .statistics import (
+    bootstrap_ci,
+    metric_ci,
+    paired_bootstrap_test,
+)
 
 __all__ = [
     "AgentTask",
@@ -76,4 +81,7 @@ __all__ = [
     "success_rate",
     "task_dependency_score",
     "throughput_score",
+    "bootstrap_ci",
+    "metric_ci",
+    "paired_bootstrap_test",
 ]
