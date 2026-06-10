@@ -14,14 +14,19 @@ from orchestratebench.evaluate import (
     mean_latency,
     mean_retry_rate,
     orchestration_efficiency_score,
+    per_class_routing_metrics,
     policy_comparison,
     routing_accuracy,
+    routing_confusion_matrix,
     routing_distribution,
+    routing_macro_f1,
     skip_rate,
     success_rate,
     task_dependency_score,
     throughput_score,
 )
+
+import pytest
 
 
 def _make_traces(n: int = 5, success: bool = True):
@@ -126,3 +131,89 @@ def test_policy_comparison_includes_new_metrics() -> None:
     result = policy_comparison({"fixed": traces})
     assert "orchestration_efficiency_score" in result["fixed"]
     assert "task_dependency_score" in result["fixed"]
+
+
+# ---------------------------------------------------------------------------
+# Per-class routing metrics
+# ---------------------------------------------------------------------------
+
+
+def test_per_class_routing_metrics_perfect_prediction() -> None:
+    pred = ["direct_tool", "decompose", "direct_tool", "code_execution"]
+    ref = ["direct_tool", "decompose", "direct_tool", "code_execution"]
+    metrics = per_class_routing_metrics(pred, ref)
+    for cls in ("direct_tool", "decompose", "code_execution"):
+        assert metrics[cls]["precision"] == 1.0
+        assert metrics[cls]["recall"] == 1.0
+        assert metrics[cls]["f1"] == 1.0
+    assert metrics["direct_tool"]["support"] == 2.0
+    assert metrics["decompose"]["support"] == 1.0
+
+
+def test_per_class_routing_metrics_class_imbalance_exposes_minority_failure() -> None:
+    # 8 majority correct, but every minority instance misrouted to majority
+    pred = ["direct_tool"] * 10
+    ref = ["direct_tool"] * 8 + ["decompose", "code_execution"]
+    metrics = per_class_routing_metrics(pred, ref)
+
+    # Naive accuracy looks fine (8/10 = 0.8) but minority recall is 0
+    assert routing_accuracy(pred, ref) == 0.8
+    assert metrics["decompose"]["recall"] == 0.0
+    assert metrics["decompose"]["f1"] == 0.0
+    assert metrics["code_execution"]["recall"] == 0.0
+    # Majority class precision drops because it absorbed misroutes
+    assert metrics["direct_tool"]["precision"] == 0.8
+    assert metrics["direct_tool"]["recall"] == 1.0
+
+
+def test_per_class_routing_metrics_empty_inputs() -> None:
+    assert per_class_routing_metrics([], []) == {}
+
+
+def test_per_class_routing_metrics_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        per_class_routing_metrics(["a"], ["a", "b"])
+
+
+def test_routing_macro_f1_unweighted_average() -> None:
+    # Two classes, one perfect (f1=1.0), one totally wrong (f1=0.0)
+    pred = ["a", "a", "a", "a"]
+    ref = ["a", "a", "b", "b"]
+    # class a: precision 2/4=0.5, recall 2/2=1.0, f1 = 2*0.5*1.0/1.5 = 0.6667
+    # class b: precision 0/0=0.0, recall 0/2=0.0, f1 = 0.0
+    # macro = (0.6667 + 0.0) / 2 = 0.3333
+    macro = routing_macro_f1(pred, ref)
+    assert macro == pytest.approx(1 / 3, abs=1e-4)
+
+
+def test_routing_macro_f1_empty_returns_zero() -> None:
+    assert routing_macro_f1([], []) == 0.0
+
+
+def test_routing_confusion_matrix_diagonal_when_perfect() -> None:
+    pred = ["decompose", "direct_tool", "decompose"]
+    ref = ["decompose", "direct_tool", "decompose"]
+    cm = routing_confusion_matrix(pred, ref)
+    # Diagonal entries match support; off-diagonal all zero
+    assert cm["decompose"]["decompose"] == 2
+    assert cm["direct_tool"]["direct_tool"] == 1
+    assert cm["decompose"]["direct_tool"] == 0
+    assert cm["direct_tool"]["decompose"] == 0
+
+
+def test_routing_confusion_matrix_off_diagonal_captures_misroutes() -> None:
+    pred = ["direct_tool", "direct_tool", "decompose"]
+    ref = ["decompose", "direct_tool", "decompose"]
+    cm = routing_confusion_matrix(pred, ref)
+    # Row = ground truth, column = prediction
+    assert cm["decompose"]["direct_tool"] == 1  # 1 misroute decompose -> direct_tool
+    assert cm["decompose"]["decompose"] == 1
+    assert cm["direct_tool"]["direct_tool"] == 1
+    # Row sums equal support
+    assert sum(cm["decompose"].values()) == 2
+    assert sum(cm["direct_tool"].values()) == 1
+
+
+def test_routing_confusion_matrix_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError, match="same length"):
+        routing_confusion_matrix(["a"], ["a", "b"])
