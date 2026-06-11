@@ -37,9 +37,10 @@ from .evaluate import (
     routing_macro_f1,
 )
 
-# Default to the most capable model so the comparison reflects the *best* the
-# model-driven approach can do (override via env without touching code).
-DEFAULT_LLM_MODEL = os.getenv("ORCHESTRATEBENCH_LLM_MODEL", "claude-opus-4-8")
+# Cost-conscious default: Sonnet 4.6 already saturates this diagnostic set
+# (100% incl. all adversarial cases), so a pricier model buys nothing here.
+# Override via env (e.g. claude-opus-4-8) without touching code.
+DEFAULT_LLM_MODEL = os.getenv("ORCHESTRATEBENCH_LLM_MODEL", "claude-sonnet-4-6")
 
 _DECISION_GUIDE = {
     RoutingDecision.DIRECT_TOOL: (
@@ -144,7 +145,8 @@ class LLMPolicy:
         )
 
     def route(self, task: AgentTask) -> OrchestratorAction:
-        # NOTE: no temperature/top_p/top_k — removed on opus-4-8 (would 400).
+        # NOTE: no temperature/top_p/top_k — opus-4-8 rejects them (400), and
+        # omitting keeps every model (incl. the sonnet default) working.
         response = self._get_client().messages.create(
             model=self.model,
             max_tokens=self._max_tokens,
