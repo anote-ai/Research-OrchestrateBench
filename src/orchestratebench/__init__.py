@@ -51,6 +51,12 @@ from .statistics import (
     metric_ci,
     paired_bootstrap_test,
 )
+from .routing_comparison import (
+    LLMPolicy,
+    format_comparison_report,
+    make_routing_eval_set,
+    run_routing_comparison,
+)
 
 __all__ = [
     "AgentTask",
@@ -94,4 +100,8 @@ __all__ = [
     "bootstrap_ci",
     "metric_ci",
     "paired_bootstrap_test",
+    "LLMPolicy",
+    "make_routing_eval_set",
+    "run_routing_comparison",
+    "format_comparison_report",
 ]
