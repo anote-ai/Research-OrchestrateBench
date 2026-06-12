@@ -1,7 +1,5 @@
 """Tests for orchestratebench.core."""
 
-import pytest
-
 from orchestratebench.core import (
     AgentTask,
     ExecutionTrace,
