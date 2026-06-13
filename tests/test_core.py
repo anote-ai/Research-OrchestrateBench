@@ -152,6 +152,12 @@ def test_dependency_graph_cycle_detection() -> None:
         graph.topological_order()
 
 
+def test_dependency_graph_unknown_dependency_detection() -> None:
+    task = make_task("orphan", complexity=0.2, dependencies=["missing-task"])
+    with pytest.raises(ValueError, match="unknown task IDs"):
+        DependencyGraph([task])
+
+
 def test_dependency_graph_critical_path() -> None:
     t1 = make_task("a", complexity=0.1)
     t2 = make_task("b", complexity=0.2, dependencies=[t1.task_id])
@@ -181,6 +187,40 @@ def test_retry_policy_zero_failure_rate() -> None:
     trace = policy.execute_with_retry(task)
     assert trace.success is True
     assert trace.n_retries == 0
+
+
+def test_default_simulate_is_deterministic_for_same_action() -> None:
+    action = OrchestratorAction(
+        task_id="task-123",
+        decision=RoutingDecision.CODE_EXECUTION,
+        selected_agent=SubAgentType.CODE,
+        confidence=0.9,
+    )
+    trace_a = _default_simulate(action, seed=11)
+    trace_b = _default_simulate(action, seed=11)
+    assert trace_a.total_latency_ms == trace_b.total_latency_ms
+    assert trace_a.total_cost_usd == trace_b.total_cost_usd
+    assert trace_a.n_subagent_calls == trace_b.n_subagent_calls
+
+
+def test_default_simulate_reflects_routing_profile() -> None:
+    direct = OrchestratorAction(
+        task_id="shared-task",
+        decision=RoutingDecision.DIRECT_TOOL,
+        selected_agent=SubAgentType.TOOL_CALL,
+        confidence=0.9,
+    )
+    decomposed = OrchestratorAction(
+        task_id="shared-task",
+        decision=RoutingDecision.DECOMPOSE,
+        selected_agent=SubAgentType.PLANNING,
+        confidence=0.9,
+    )
+    direct_trace = _default_simulate(direct, seed=3)
+    decomposed_trace = _default_simulate(decomposed, seed=3)
+    assert direct_trace.total_latency_ms < decomposed_trace.total_latency_ms
+    assert direct_trace.total_cost_usd < decomposed_trace.total_cost_usd
+    assert direct_trace.n_subagent_calls < decomposed_trace.n_subagent_calls
 
 
 # ---------------------------------------------------------------------------
@@ -222,6 +262,9 @@ def test_bench_evaluate_with_dependencies_skips_on_failure() -> None:
     statuses = [t.status for t in traces]
     assert TaskStatus.FAILED in statuses
     assert TaskStatus.SKIPPED in statuses
+    skipped = next(trace for trace in traces if trace.status == TaskStatus.SKIPPED)
+    assert skipped.dependencies_declared
+    assert skipped.dependencies_resolved == []
 
 
 # ---------------------------------------------------------------------------

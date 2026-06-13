@@ -1,10 +1,13 @@
 #!/usr/bin/env python3
 """Demo: compare FixedPolicy vs HeuristicPolicy on 20 tasks."""
 
+from pathlib import Path
 import sys
-import os
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "src"))
+ROOT = Path(__file__).resolve().parents[1]
+SRC = ROOT / "src"
+if str(SRC) not in sys.path:
+    sys.path.insert(0, str(SRC))
 
 from orchestratebench.core import FixedPolicy, HeuristicPolicy, OrchestratorBench
 from orchestratebench.data import make_benchmark_tasks
@@ -36,6 +39,7 @@ def main() -> None:
         table.add_column("Success Rate", justify="right")
         table.add_column("Mean Latency (ms)", justify="right")
         table.add_column("Mean Cost (USD)", justify="right")
+        table.add_column("Efficiency", justify="right")
         table.add_column("N Traces", justify="right")
         for policy_name, stats in comparison.items():
             table.add_row(
@@ -43,6 +47,7 @@ def main() -> None:
                 f"{stats['success_rate']:.3f}",
                 f"{stats['mean_latency']:.0f}",
                 f"{stats['mean_cost']:.4f}",
+                f"{stats['orchestration_efficiency_score']:.3f}",
                 str(stats["n_traces"]),
             )
         console.print(table)

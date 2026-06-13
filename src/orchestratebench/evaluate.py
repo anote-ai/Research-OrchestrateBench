@@ -114,20 +114,19 @@ def task_dependency_score(traces: List[ExecutionTrace]) -> float:
     """Fraction of traces whose declared dependencies were fully resolved.
 
     A dependency is considered resolved when it appears in
-    ``trace.dependencies_resolved``.  Traces with no declared
-    dependencies contribute a perfect score.
+    ``trace.dependencies_resolved``. Traces with no declared dependencies
+    contribute a perfect score, while skipped or partially resolved traces are
+    penalised proportionally.
     """
     if not traces:
         return 0.0
     scores: List[float] = []
     for trace in traces:
-        declared = set(trace.dependencies_resolved)
+        declared = set(trace.dependencies_declared)
         if not declared:
             scores.append(1.0)
             continue
-        # We treat dependencies_resolved as the set of deps that were
-        # successfully handled before this task ran.
-        resolved = len(declared)
+        resolved = len(declared.intersection(trace.dependencies_resolved))
         scores.append(resolved / len(declared))
     return sum(scores) / len(scores)
 

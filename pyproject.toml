@@ -16,6 +16,11 @@ dependencies = [
     "tqdm>=4.65",
 ]
 
+[project.optional-dependencies]
+dev = [
+    "pytest>=9.0",
+]
+
 [tool.setuptools.packages.find]
 where = ["src"]
 
