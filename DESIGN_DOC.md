@@ -71,6 +71,16 @@ correct understanding — route / decompose / execute code / reason — and how 
 We measure the **decision policy and its failure propagation**, not intent correctness. This should
 be coordinated before submission so the two papers cite-and-complement rather than collide.
 
+**Verified (read of #2's design doc, 2026-06-17):** the overlap Natan flagged is surface-level. **#2
+(IntentBench)** works at the *specification / input* layer — scoring NL-spec quality (SQS) and
+intent-violation rate (IVR) when an LLM turns a single ambiguous spec into code (800 spec→code pairs,
+coding domain). **#11 (OrchestraBench)** works at the *orchestration / execution* layer —
+routing-policy choice, cascade radius, and recovery across a multi-agent pipeline. Different unit
+(spec→code vs. multi-agent pipeline), different metrics (IVR/SQS vs. cascade-radius/recovery),
+different failure mode (static intent violation vs. dynamic cascade). They are **complementary ends
+of the same pipeline** (spec quality in → orchestration reliability through), with no measurement
+overlap to resolve — the papers should simply cross-cite.
+
 ### Literature Review
 
 We organize prior work into four strands and position OrchestraBench against each.
