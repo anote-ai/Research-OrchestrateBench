@@ -56,6 +56,14 @@ evaluation, so our differentiation cannot be "we inject failures." The paper mus
 measured **per routing policy** (Fixed / Heuristic / LLM / Oracle), and (c) the **routing-mechanism
 result** of Experiment 1, which MAS-FIRE does not address.
 
+**Verified (full-text read of MAS-FIRE v1, 2026-06-17):** MAS-FIRE **does not quantify cascade
+depth** — it notes only qualitatively that a corrupted output "propagates downstream unchecked,"
+with no stages-traversed metric — **and does not vary routing policy**: its experimental axes are
+*topology* (linear / iterative / bilateral; MetaGPT vs. Table-Critic vs. CAMEL), fault type (15
+categories), and foundation model, not routing strategy. Both of OrchestraBench's primary
+differentiators — cascade radius across depths and per-routing-policy failure handling — are
+therefore *uncovered* by MAS-FIRE, not merely framed differently.
+
 **Internal overlap (flagged by Natan): Paper #2 — *Intent Specification as a First-Class Evaluation
 Object* (Susana Haing / Spurthi).** Differentiation: #2 evaluates whether the agent's
 *understanding of intent* is correct; #11 evaluates which *orchestration action* to take given a
