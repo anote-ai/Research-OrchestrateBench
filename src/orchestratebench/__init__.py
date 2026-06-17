@@ -21,6 +21,7 @@ from .data import (
     make_execution_trace,
     make_finance_approval_workflow,
     make_hr_onboarding_workflow,
+    make_linear_pipeline,
     make_task,
 )
 from .evaluate import (
@@ -56,6 +57,13 @@ from .routing_comparison import (
     format_comparison_report,
     make_routing_eval_set,
     run_routing_comparison,
+)
+from .experiments import (
+    default_workflow_suite,
+    format_cascade_report,
+    format_recovery_report,
+    run_cascade_by_depth,
+    run_failure_recovery,
 )
 
 __all__ = [
@@ -104,4 +112,10 @@ __all__ = [
     "make_routing_eval_set",
     "run_routing_comparison",
     "format_comparison_report",
+    "make_linear_pipeline",
+    "default_workflow_suite",
+    "run_failure_recovery",
+    "run_cascade_by_depth",
+    "format_recovery_report",
+    "format_cascade_report",
 ]

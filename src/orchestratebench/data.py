@@ -213,6 +213,36 @@ def make_devops_deploy_workflow() -> List[AgentTask]:
     return [t1, t2, t3, t4, t5]
 
 
+def make_linear_pipeline(
+    n_stages: int,
+    domain: str = "generic",
+    seed: int = 0,
+) -> List[AgentTask]:
+    """Generate an ``n_stages`` linear pipeline where each stage depends on the prior one.
+
+    Used by Experiment 3 to measure cascade radius as a function of pipeline
+    depth (e.g. 3-, 5-, 7-stage). Complexity / capability flags vary
+    deterministically with ``seed`` so every run is reproducible.
+    """
+    if n_stages < 1:
+        raise ValueError(f"n_stages must be >= 1, got {n_stages}")
+    rng = random.Random(seed)
+    tasks: List[AgentTask] = []
+    prev_id: Optional[str] = None
+    for i in range(n_stages):
+        task = AgentTask(
+            description=f"{domain} pipeline stage {i + 1}/{n_stages}",
+            complexity_score=round(rng.uniform(0.2, 0.9), 3),
+            requires_code=rng.random() < 0.5,
+            requires_retrieval=rng.random() < 0.5,
+            dependencies=[prev_id] if prev_id is not None else [],
+            metadata={"stage": i, "domain": domain},
+        )
+        tasks.append(task)
+        prev_id = task.task_id
+    return tasks
+
+
 def make_task(
     description: str,
     complexity: float = 0.5,
