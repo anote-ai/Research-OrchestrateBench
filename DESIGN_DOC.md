@@ -3,7 +3,7 @@
 **Paper #11 (T7 Orchestration)**  
 **Authors**: Yidian Chen, Yingzi Gu  
 **Supervisor**: Natan Vidra  
-**Date**: 2026-06-12  
+**Date**: 2026-06-16  
 **Target venues**: DAI 2026 Industry Track (8/3) · EMNLP ORACLE workshop (9/18) · AAAI 2027 (7/28)
 
 > This document supersedes the auto-generated PR #25 draft and aligns with the official #11
@@ -62,6 +62,49 @@ Object* (Susana Haing / Spurthi).** Differentiation: #2 evaluates whether the ag
 correct understanding — route / decompose / execute code / reason — and how those decisions cascade.
 We measure the **decision policy and its failure propagation**, not intent correctness. This should
 be coordinated before submission so the two papers cite-and-complement rather than collide.
+
+### Literature Review
+
+We organize prior work into four strands and position OrchestraBench against each.
+
+**(1) Agent benchmarks measure final-task success, not orchestration.** AgentBench, SWE-Bench, and
+OdysseyBench evaluate whether an agent completes a task but report a single success signal — they
+cannot say *which* orchestration decision (route, decompose, code-vs-reason) failed or how an error
+spread. *Beyond the Strongest* (arXiv:2509.23537) quantifies the cost of this blind spot: on
+GPQA-Diamond at least one agent was correct in 95.5% of cases, yet orchestration delivered only
+87.4% — ~8 points of individually-recoverable correctness discarded by the orchestration layer.
+OrchestraBench is built to attribute exactly this loss.
+
+**(2) Failure taxonomies and post-hoc attribution observe failures; they do not intervene.** MAST
+(arXiv:2503.13657) catalogs 14 multi-agent failure modes over 1,600+ traces (κ=0.88) but is purely
+descriptive. TraceElephant (arXiv:2604.22708) and the ICML 2025 attribution work assign a failure to
+the responsible agent/step *after the fact*. OrchestraBench instead **injects** the MAST taxonomy
+under seed control and measures recovery per mode — attribution becomes a means, not the product.
+
+**(3) Fault injection and cascade — the closest strand, and our main novelty risk.** MAS-FIRE
+(arXiv:2602.19843) is the nearest external work: it injects faults via prompt modification, response
+rewriting, and message-routing manipulation, defines a 15-type fault taxonomy, and grades recovery in
+four tiers. Crucially, its comparative axis is **architectural topology** — it finds iterative designs
+neutralize more faults than linear workflows — **not routing policy**. *From Spark to Fire*
+(arXiv:2603.04474) shows errors cascade super-linearly in pipelines but ships no benchmark.
+OrchestraBench's daylight from MAS-FIRE is therefore specific and defensible: we make **cascade radius
+across pipeline depths** a first-class metric and condition failure handling on **routing policy
+(Fixed / Heuristic / LLM / Oracle)**, a dimension MAS-FIRE does not vary. (Terminology caveat:
+MAS-FIRE's "message-routing manipulation" is a fault-injection *mechanism*; our "routing policy" is
+the orchestration decision *under study* — the paper must disambiguate these explicitly.)
+
+**(4) Orchestration methods and frameworks are evaluation targets, not competitors.** AdaptOrch
+(arXiv:2602.16873) is a task-adaptive orchestration *method*; the orchestration-pattern benchmark
+(arXiv:2603.22651) compares sequential/parallel/hierarchical/reflexive *architectures* on a
+cost-accuracy Pareto; Doctor-RAG (arXiv:2604.00865) diagnoses and repairs *retrieval* failures.
+OrchestraBench is complementary: it is the reliability benchmark these methods would be scored on, and
+it targets the routing/decomposition decision layer rather than retrieval repair or one architecture
+family.
+
+**Synthesis — the gap.** No existing work ships a *controlled, reproducible injection harness that
+measures recovery and cascade containment as first-class metrics, compared across routing policies.*
+That intersection — injection (vs. observation), cascade radius (vs. reliability score), and
+routing-policy conditioning (vs. topology) — is OrchestraBench's contribution.
 
 ---
 
@@ -278,3 +321,24 @@ used.
   (#7). These should not be finalized solo.
 - **Open differentiation items for 6/16 standup**: MAS-FIRE external overlap and Paper #2 internal
   intent-spec overlap.
+
+---
+
+## 11. Milestones & Timeline
+
+Gated to the primary venue (**DAI 2026 Industry Track, 8/3**), with one week of buffer before
+submission. Owners: Yidian Chen (Y.C.) and Yingzi Gu (Y.G.).
+
+| Window | Milestone | Owner |
+|---|---|---|
+| 6/16 – 6/20 (Fri) | Design doc finalized (RQs, metrics, hypotheses, literature review, milestones) and linked in the shared research drive | Y.C. |
+| 6/20 – 6/27 | Run **Exp 2** (failure injection/recovery, #4) and **Exp 3** (cascade depth, #7) on the workflow suites; replace every hypothesis with measured numbers | Y.C. + Y.G. |
+| 6/27 – **7/1** | Full 1,800-trace **Exp 1** suite (graded comparison) + **first complete paper draft** — *meets Natan's July 1 initial-draft deadline* | Y.C. + Y.G. |
+| 7/1 – 7/14 | **Exp 4** (decomposition) + cross-model sweep + cost log; tighten MAS-FIRE (topology-vs-routing) and Paper #2 (decision-policy-vs-intent) differentiation | Y.C. + Y.G. |
+| 7/14 – 7/21 | Internal mock peer review + revisions; finalize bootstrap CIs and significance tests | both |
+| 7/21 – 7/27 | Camera-ready formatting + reproducibility package + artifact release (seeds, gold set, one-command repro) | both |
+| **7/27** | **Freeze** — one-week buffer before DAI | both |
+| **8/3** | **DAI 2026 Industry Track submission** | both |
+
+**Fallbacks**: EMNLP ORACLE workshop (9/18) if Exp 2/3 slip past the DAI window; AAAI 2027 (7/28
+abstract) only if the cascade-radius headline lands with strong measured results.
