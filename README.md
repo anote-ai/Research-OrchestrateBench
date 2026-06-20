@@ -39,8 +39,11 @@ Built-in policies:
 - `scripts/run_exp2.py` — offline Exp 2 harness demo with retry-aware recovery diagnostics + CSV/JSON artifacts
 - `scripts/run_exp3.py` — offline Exp 3 harness demo with cascade depth/stage sweep + CSV/JSON artifacts
 - `scripts/validate_measured_input.py` — preflight validation for collaborative measured Exp 2/3 inputs
+- `scripts/scaffold_measured_inputs.py` — generate blank measured long-form CSV skeletons for Exp 2/3
+- `scripts/run_exp23_pipeline.py` — one-command Exp 2/3 automation: collect measured-style rows, validate, analyze, export paper artifacts
 - `scripts/export_paper_tables.py` — convert Exp 2/3 summary artifacts into paper-friendly Markdown + LaTeX tables
 - `examples/` — minimal measured-input templates for Exp 2 and Exp 3
+- `data/measured/README.md` — step-by-step instructions for creating real measured Exp 2/3 inputs
 - `tests/` — unit tests covering routing, dependencies, retry handling, and metrics
 
 ## Policy Comparison
@@ -69,6 +72,8 @@ Useful options for the experiment scripts:
 ```bash
 python3 scripts/run_exp2.py --n-runs 100 --with-ci
 python3 scripts/run_exp3.py --n-runs 100 --depths 3,5,7 --injection-stages 0,1,2 --with-ci
+python3 scripts/scaffold_measured_inputs.py --output-dir data/measured
+python3 scripts/run_exp23_pipeline.py --with-ci
 python3 scripts/run_exp2.py --input-file path/to/exp2_measured.csv --with-ci
 python3 scripts/run_exp3.py --input-file path/to/exp3_measured.jsonl --with-ci
 python3 scripts/validate_measured_input.py --experiment 3 --input-file path/to/exp3_measured.jsonl --strict
@@ -139,6 +144,34 @@ Additional columns are allowed and preserved in the loaded records, so annotatio
 Minimal templates live at:
 - `examples/exp2_measured_template.csv`
 - `examples/exp3_measured_template.jsonl`
+
+To generate a blank working scaffold for real collaborative runs:
+
+```bash
+python3 scripts/scaffold_measured_inputs.py --output-dir data/measured
+```
+
+That script writes editable CSV skeletons with deterministic `scenario_id` values and blank metric
+columns. The full workflow is documented in `data/measured/README.md`.
+
+If you want the current harness to do **everything automatically** in one command, including
+measured-style long-form generation, validation, analysis, and paper-facing exports, run:
+
+```bash
+./scripts/run_exp23_pipeline.py --with-ci
+```
+
+That pipeline writes:
+- measured-style CSV inputs under `artifacts/exp23_pipeline/measured_inputs/`
+- Exp 2 analysis under `artifacts/exp23_pipeline/analysis/exp2/`
+- Exp 3 analysis under `artifacts/exp23_pipeline/analysis/exp3/<failure_mode>/`
+- a run manifest at `artifacts/exp23_pipeline/pipeline_manifest.json`
+
+Important distinction:
+- `run_exp23_pipeline.py` is the fully automatic harness path. It does **not** require any manual
+  filling.
+- `scaffold_measured_inputs.py` is the collaborative real-measurement path. It creates blank files
+  that humans fill from external system runs before analysis.
 
 Recommended workflow for real runs:
 

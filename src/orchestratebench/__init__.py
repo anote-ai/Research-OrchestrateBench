@@ -67,6 +67,20 @@ from .measured_runs import (
     load_exp3_measured_records,
     prefer_scenario_id,
 )
+from .measured_templates import (
+    DEFAULT_MEASURED_POLICIES,
+    EXP2_SKELETON_FIELDS,
+    EXP3_SKELETON_FIELDS,
+    build_exp2_measured_skeleton,
+    build_exp3_measured_skeleton,
+)
+from .automation import (
+    SUPPORTED_POLICY_FACTORIES,
+    build_auto_exp2_measured_records,
+    build_auto_exp3_measured_records,
+    build_named_policies,
+    write_auto_measured_records,
+)
 from .paper_reports import (
     build_exp2_latex_tables,
     build_exp2_markdown_report,
@@ -148,6 +162,16 @@ __all__ = [
     "load_exp2_measured_records",
     "load_exp3_measured_records",
     "prefer_scenario_id",
+    "DEFAULT_MEASURED_POLICIES",
+    "EXP2_SKELETON_FIELDS",
+    "EXP3_SKELETON_FIELDS",
+    "build_exp2_measured_skeleton",
+    "build_exp3_measured_skeleton",
+    "SUPPORTED_POLICY_FACTORIES",
+    "build_named_policies",
+    "build_auto_exp2_measured_records",
+    "build_auto_exp3_measured_records",
+    "write_auto_measured_records",
     "build_exp2_latex_tables",
     "build_exp2_markdown_report",
     "build_exp3_latex_tables",
