@@ -3,7 +3,7 @@
 **Paper #11 (T7 Orchestration)**  
 **Authors**: Yidian Chen, Yingzi Gu  
 **Supervisor**: Natan Vidra  
-**Date**: 2026-06-16  
+**Date**: 2026-06-20  
 **Target venues**: DAI 2026 Industry Track (8/3) · EMNLP ORACLE workshop (9/18) · AAAI 2027 (7/28)
 
 > This document supersedes the auto-generated PR #25 draft and aligns with the official #11
@@ -172,30 +172,50 @@ difficulty. The larger 1,800-trace workflow suite is where the LLM router is exp
 100% and yield a graded comparison. Results were stable across 3 passes (78/78); the prompt did not
 include gold labels.
 
-### Experiment 2 — Failure injection and recovery *(in progress — core, with Y. Gu / #4)*
+### Experiment 2 — Failure injection and recovery *(auto-harness results in repo; collaborative measured run pending — core, with Y. Gu / #4)*
 
 - **Setup**: Using the MAST failure taxonomy, inject controlled failures at specific pipeline stages.
   Start with five high-frequency modes: ambiguous delegation, tool invocation error, context
-  pollution, conflicting sub-agent outputs, and premature action.
+  pollution, conflicting sub-agent outputs, and premature action. In the current repo harness we
+  sweep those modes across the three workflow families and three routing policies (`fixed`,
+  `heuristic`, `retry(heuristic)`).
 - **Metrics**: per-failure-mode recovery rate, escalation latency, and final task accuracy under
   failure.
-- **Scale**: 100 traces per failure mode × 5 modes × 3 policies = 1,500 traces.
-- **Status**: scaffolded by PR #21 and now aligned in code with retry-aware offline harness metrics
-  (`recovery_rate`, `final_task_success_rate`, `mean_time_to_detection_ms`,
-  `mean_escalation_latency_ms`, `mean_cascade_radius`). The runner now also exports long-form raw
-  runs, grouped CSV/JSON summaries, and paired bootstrap policy-comparison artifacts for
-  workflow-level review. It can now also ingest *measured* collaborative records from `.csv`,
-  `.jsonl`, or `.json` via `--input-file`, with schema validation in
-  `scripts/validate_measured_input.py`, and emit paper-facing markdown / LaTeX tables; numbers
-  below remain hypotheses until the collaborative Exp 2 run is completed.
+- **Scale**: planned collaborative run = 100 traces per failure mode × 5 modes × 3 policies =
+  1,500 traces. Current one-command repo reproduction defaults to 5 runs × 3 workflows × 5 modes ×
+  3 policies = **225 measured-style rows**.
+- **Implementation status**: scaffolded by PR #21 and now aligned in code with retry-aware offline
+  harness metrics (`recovery_rate`, `final_task_success_rate`, `mean_time_to_detection_ms`,
+  `mean_escalation_latency_ms`, `mean_cascade_radius`). The runner exports long-form raw runs,
+  grouped CSV/JSON summaries, paired bootstrap policy-comparison artifacts, and paper-facing
+  Markdown / LaTeX tables. It also accepts collaborative measured records from `.csv`, `.jsonl`,
+  or `.json` via `--input-file`, with schema validation in `scripts/validate_measured_input.py`.
+- **Current auto-harness findings (2026-06-20)**: `retry(heuristic)` only helps on the explicitly
+  retryable `tool_invocation_error` mode: recovery rate = **1.0**, final-task success = **1.0**,
+  mean cascade radius = **0.0**, and escalation latency = **0.0**. On `ambiguous_delegation`,
+  `context_pollution`, `conflicting_outputs`, and `premature_action`, all three policies remain at
+  **0 recovery / 0 final success** in the current harness, indicating that retry alone does not
+  repair latent or semantic failures.
+- **Interpretation**: this is the mechanism result we expected for RQ3/RQ4. Automatic retry is
+  sufficient for retryable tool faults, but not for failures that require better attribution,
+  state repair, or semantic validation. Under those latent failures, `retry(heuristic)` often has
+  **worse time-to-detection** than `fixed` or `heuristic`, because it extends a corrupted trace
+  instead of containing it.
+- **Primary artifacts**: `artifacts/exp23_pipeline/analysis/exp2/paper_summary.md`,
+  `artifacts/exp23_pipeline/analysis/exp2/paper_tables.tex`, and
+  `artifacts/exp23_pipeline/pipeline_manifest.json`.
 
-### Experiment 3 — Cascade propagation depth *(in progress — core, with Y. Gu / #7)*
+### Experiment 3 — Cascade propagation depth *(auto-harness results in repo; collaborative measured run pending — core, with Y. Gu / #7)*
 
 - **Setup**: Inject a single seeded error at stage 1, 2, or 3 of multi-stage workflows and measure how
-  many downstream stages are corrupted.
+  many downstream stages are corrupted. The analyzer consumes exactly one `failure_mode` per file;
+  the current one-command pipeline reproduces both `context_pollution` and
+  `tool_invocation_error`.
 - **Metrics**: cascade radius, time-to-detection, recovery completeness score.
-- **Scale**: 100 traces per injection point × 3 depths × 3 injection points = 900 traces.
-- **Status**: scaffolded by PR #21 and now exposed in code via depth-wise diagnostics
+- **Scale**: planned collaborative run = 100 traces per injection point × 3 depths × 3 injection
+  points = 900 traces. Current one-command repo reproduction defaults to 5 runs × 3 depths × 3
+  injection stages × 3 policies = **135 measured-style rows per failure mode**.
+- **Implementation status**: scaffolded by PR #21 and now exposed in code via depth-wise diagnostics
   (`mean_cascade_radius`, `mean_recovery_completeness`, `final_task_success_rate`,
   `mean_time_to_detection_ms`). The current runner now sweeps injection stages 1/2/3 and exports
   long-form raw runs, grouped CSV/JSON summaries, and paired bootstrap policy-comparison artifacts.
@@ -203,6 +223,22 @@ include gold labels.
   `--input-file`, with schema validation in `scripts/validate_measured_input.py`, and emit
   paper-facing markdown / LaTeX tables; this remains the primary differentiation against generic
   fault injection work.
+- **Current auto-harness findings (2026-06-20, `context_pollution`)**: earlier-stage failures
+  produce strictly larger cascades, and deeper pipelines amplify that effect: mean cascade radius is
+  **2 / 4 / 6** for inject-1 at depths 3 / 5 / 7, **1 / 3 / 5** for inject-2, and **0 / 2 / 4**
+  for inject-3. In this latent-failure setting, `retry(heuristic)` does **not** improve cascade
+  containment or final-task success relative to `fixed` or `heuristic`.
+- **Current auto-harness findings (2026-06-20, `tool_invocation_error`)**: `retry(heuristic)`
+  fully contains the injected tool fault across all tested depths and injection stages: final-task
+  success = **1.0**, mean recovery completeness = **1.0**, and mean cascade radius = **0.0**,
+  while `fixed` and `heuristic` still propagate the fault downstream.
+- **Interpretation**: Experiment 3 now has a clean within-repo contrast between a retryable failure
+  family (`tool_invocation_error`) and a latent semantic failure family (`context_pollution`).
+  This is useful for the paper narrative: retry is not a generic cascade-defense mechanism; it only
+  works when the failure is both detectable and locally repairable.
+- **Primary artifacts**: `artifacts/exp23_pipeline/analysis/exp3/context_pollution/paper_summary.md`,
+  `artifacts/exp23_pipeline/analysis/exp3/tool_invocation_error/paper_summary.md`, and
+  `artifacts/exp23_pipeline/pipeline_manifest.json`.
 
 ### Experiment 4 — Decomposition quality
 
@@ -261,12 +297,17 @@ detection, because retry can repeat a corrupted state.
    Sonnet 4.6) at 100% overall, including 100% adversarial**. On this focused diagnostic the LLM
    matches Oracle; the broader workflow suite is expected to produce a graded comparison
    (projected LLM 85–95% vs. HeuristicPolicy 65–75%).
-2. **Failure recovery** *(hypothesis, to measure)*: recovery should be higher for tool invocation
-   errors than for context pollution or conflicting sub-agent outputs. Exact rates must come from
-   Exp 2, not be asserted before measurement.
-3. **Cascade propagation** *(hypothesis, to measure)*: earlier-stage failures should have larger
-   cascade radius than later-stage failures; retry should reduce final failure rate but may not fully
-   contain propagation without detection.
+2. **Failure recovery** *(current in-repo auto-harness result; collaborative measured run still
+   pending)*: recovery is indeed much higher for `tool_invocation_error` than for context pollution
+   or conflicting/semantic failures. In the current harness, `retry(heuristic)` reaches **1.0
+   recovery** and **1.0 final-task success** on `tool_invocation_error`, while all three policies
+   remain at **0 recovery / 0 final success** on `ambiguous_delegation`, `context_pollution`,
+   `conflicting_outputs`, and `premature_action`.
+3. **Cascade propagation** *(current in-repo auto-harness result; collaborative measured run still
+   pending)*: earlier-stage failures do have larger cascade radius than later-stage failures, and
+   deeper pipelines amplify the effect. Retry only reduces final failure rate when the failure is
+   retryable and locally detectable (`tool_invocation_error`); it does not contain propagation for
+   latent context corruption.
 4. **Cost-quality Pareto** *(planned)*: simple tasks may favor Fixed/Heuristic due to cost, while
    complex or adversarial tasks should justify model routing.
 5. **Statistical confidence**: all comparisons report 95% bootstrap CIs and paired bootstrap
@@ -326,10 +367,28 @@ Every reported number should be regenerable from a fixed seed. Artifact-release 
 - [x] Exp 2/3 scripts now export paired policy-comparison artifacts for statistical write-up.
 - [x] Exp 2/3 measured-input schema, templates, and validator are in repo for collaborative runs.
 - [x] Exp 2/3 scripts now emit paper-facing markdown / LaTeX summary artifacts from the same run.
+- [x] Exp 2/3 now have a one-command reproduction entrypoint
+  (`./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error`)
+  that generates measured-style inputs, validates them, runs the analyzers, and writes a manifest.
 - [x] Experiment 1 diagnostic has measured Fixed / Heuristic / LLM / Oracle results.
-- [ ] Exp 2/3/4 measured results.
+- [ ] Exp 2/3 collaborative external measured results.
+- [ ] Exp 4 measured results.
 - [ ] Full workflow-suite seeds + held-out split.
 - [ ] Cost log by experiment.
+
+**Current reproducibility entrypoint.** The in-repo baseline for Experiments 2/3 is now:
+
+```bash
+./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error
+```
+
+This writes measured-style inputs plus analysis artifacts under `artifacts/exp23_pipeline/`,
+including `paper_summary.md`, `paper_tables.tex`, raw long-form CSVs, pairwise comparisons, and
+`pipeline_manifest.json`. Important caveat: these are **auto-harness mechanism results**, not the
+final collaborative external-system measurements to cite as the last word in the paper. The summary
+files report `source_mode = measured` because the analyzers consume measured-form CSVs, but the
+provenance is still the repo harness unless we replace the input with externally collected measured
+records.
 
 Ethics: this is a reliability benchmark intended to make production AI systems safer, more auditable,
 and cheaper to operate by surfacing silent orchestration failures before deployment. Risks include
@@ -344,11 +403,17 @@ used.
 - **Measured**: Experiment 1 routing diagnostic (PR #26), with LLM-as-Router at 100% overall and 100%
   adversarial.
 - **Merged scaffolding**: statistical rigor (PR #20) and failure injection/cascade framework (PR #21).
-- **Codebase status**: Exp 2/3 harness now supports retry-wrapped policies and emits recovery,
-  final-task-success, detection, escalation, and cascade diagnostics in the offline scripts. Those
-  scripts now also accept measured long-form collaborative inputs and preflight validation.
-- **In progress with Y. Gu**: Experiment 2 failure taxonomy (#4) and Experiment 3 cascade propagation
-  (#7). These should not be finalized solo.
+- **Codebase status**: Exp 2/3 harness now supports retry-wrapped policies, emits recovery,
+  final-task-success, detection, escalation, and cascade diagnostics, accepts measured long-form
+  collaborative inputs with preflight validation, and can reproduce the full Exp 2/3 artifact set
+  from one command via `scripts/run_exp23_pipeline.py`.
+- **Current harness result summary (2026-06-20)**: Exp 2 shows that retry helps on
+  `tool_invocation_error` but not on latent semantic failures; Exp 3 shows that earlier injection
+  stages and deeper pipelines enlarge cascade radius for `context_pollution`, while
+  `retry(heuristic)` fully contains `tool_invocation_error`.
+- **Collaboration status with Y. Gu**: the code/doc/reproducibility side is ready; the remaining
+  joint step is to decide whether the paper will cite the in-repo auto-harness numbers as mechanism
+  validation only, or replace them with externally collected collaborative measured records.
 - **Open differentiation items for 6/16 standup**: MAS-FIRE external overlap and Paper #2 internal
   intent-spec overlap.
 
@@ -362,7 +427,7 @@ submission. Owners: Yidian Chen (Y.C.) and Yingzi Gu (Y.G.).
 | Window | Milestone | Owner |
 |---|---|---|
 | 6/16 – 6/20 (Fri) | Design doc finalized (RQs, metrics, hypotheses, literature review, milestones) and linked in the shared research drive | Y.C. |
-| 6/20 – 6/27 | Run **Exp 2** (failure injection/recovery, #4) and **Exp 3** (cascade depth, #7) on the workflow suites; replace every hypothesis with measured numbers | Y.C. + Y.G. |
+| 6/20 – 6/27 | Run **Exp 2** (failure injection/recovery, #4) and **Exp 3** (cascade depth, #7) on the workflow suites; use the one-command repo pipeline as the reproducibility baseline and replace every remaining hypothesis with collaborative measured numbers where needed | Y.C. + Y.G. |
 | 6/27 – **7/1** | Full 1,800-trace **Exp 1** suite (graded comparison) + **first complete paper draft** — *meets Natan's July 1 initial-draft deadline* | Y.C. + Y.G. |
 | 7/1 – 7/14 | **Exp 4** (decomposition) + cross-model sweep + cost log; tighten MAS-FIRE (topology-vs-routing) and Paper #2 (decision-policy-vs-intent) differentiation | Y.C. + Y.G. |
 | 7/14 – 7/21 | Internal mock peer review + revisions; finalize bootstrap CIs and significance tests | both |
