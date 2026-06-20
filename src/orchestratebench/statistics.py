@@ -77,6 +77,60 @@ def metric_ci(
     return (point, low, high)
 
 
+def paired_bootstrap_values(
+    values_a: List[float],
+    values_b: List[float],
+    n_resamples: int = 10000,
+    confidence: float = 0.95,
+    seed: int = 0,
+) -> Dict[str, object]:
+    """Paired bootstrap test for the mean difference of two numeric vectors.
+
+    ``values_a[i]`` and ``values_b[i]`` must refer to the same paired scenario.
+    Returns ``{"mean_a", "mean_b", "diff", "ci", "p_value"}``.
+    Deterministic for a fixed ``seed``.
+    """
+    if len(values_a) != len(values_b):
+        raise ValueError(
+            f"paired bootstrap needs equal-length value lists; "
+            f"got {len(values_a)} vs {len(values_b)}"
+        )
+    if not values_a:
+        return {
+            "mean_a": 0.0,
+            "mean_b": 0.0,
+            "diff": 0.0,
+            "ci": (0.0, 0.0),
+            "p_value": 1.0,
+        }
+
+    arr_a = np.asarray(values_a, dtype=float)
+    arr_b = np.asarray(values_b, dtype=float)
+    diffs = arr_a - arr_b
+    diff = float(diffs.mean())
+    mean_a = float(arr_a.mean())
+    mean_b = float(arr_b.mean())
+
+    rng = np.random.default_rng(seed)
+    n = arr_a.shape[0]
+    idx = rng.integers(0, n, size=(n_resamples, n))
+    boot_diffs = (arr_a[idx] - arr_b[idx]).mean(axis=1)
+    alpha = (1.0 - confidence) / 2.0
+    low = float(np.percentile(boot_diffs, alpha * 100.0))
+    high = float(np.percentile(boot_diffs, (1.0 - alpha) * 100.0))
+    if diff >= 0.0:
+        p_value = float(np.mean(boot_diffs <= 0.0)) * 2.0
+    else:
+        p_value = float(np.mean(boot_diffs >= 0.0)) * 2.0
+    return {
+        "mean_a": mean_a,
+        "mean_b": mean_b,
+        "diff": diff,
+        "ci": (low, high),
+        "p_value": min(p_value, 1.0),
+    }
+
+
 def paired_bootstrap_test(
     traces_a: List[ExecutionTrace],
     traces_b: List[ExecutionTrace],

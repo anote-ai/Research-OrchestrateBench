@@ -219,39 +219,85 @@ class RetryPolicy:
         task: AgentTask,
         simulate_fn: Optional[Callable[[OrchestratorAction], ExecutionTrace]] = None,
     ) -> ExecutionTrace:
-        """Execute task routing with retry logic, returning a final trace."""
+        """Execute task routing with retry logic, returning a final trace.
+
+        Two failure sources are supported:
+
+        1. The policy's own synthetic transient-failure process
+           (``failure_rate``), which models infra/tool flakiness.
+        2. A ``simulate_fn`` that returns a failed ``ExecutionTrace`` for the
+           current attempt, which lets the failure-injection harness trigger a
+           retry on controlled benchmark failures.
+        """
         action = self.route(task)
         retries: List[RetryRecord] = []
+        retry_latency_ms = 0.0
+        retry_cost_usd = 0.0
         for attempt in range(task.max_retries + 1):
-            failed = self._rng.random() < self._failure_rate and attempt < task.max_retries
-            if not failed:
-                if simulate_fn is not None:
-                    trace = simulate_fn(action)
-                else:
-                    trace = _default_simulate(action, seed=attempt)
-                trace.retries.extend(retries)
-                trace.status = TaskStatus.SUCCESS
-                return trace
-            # Record failure and retry
-            retries.append(
-                RetryRecord(
+            transient_failure = (
+                self._rng.random() < self._failure_rate and attempt < task.max_retries
+            )
+            if transient_failure:
+                record = RetryRecord(
                     attempt=attempt,
                     error="Simulated transient failure",
                     latency_ms=self._rng.uniform(50, 300),
                 )
+                retries.append(record)
+                retry_latency_ms += record.latency_ms
+                continue
+
+            trace = (
+                simulate_fn(action)
+                if simulate_fn is not None
+                else _default_simulate(action, seed=attempt)
             )
-        # All retries exhausted
-        trace = ExecutionTrace(
+            if trace.success:
+                final = trace.model_copy(deep=True)
+                final.retries.extend(retries)
+                final.total_latency_ms += retry_latency_ms
+                final.total_cost_usd += retry_cost_usd
+                final.status = TaskStatus.SUCCESS
+                final.success = True
+                return final
+
+            if attempt < task.max_retries:
+                retries.append(self._retry_record_from_trace(trace, attempt))
+                retry_latency_ms += trace.total_latency_ms
+                retry_cost_usd += trace.total_cost_usd
+                continue
+
+            final = trace.model_copy(deep=True)
+            final.retries = list(retries) + final.retries
+            final.total_latency_ms += retry_latency_ms
+            final.total_cost_usd += retry_cost_usd
+            final.status = TaskStatus.FAILED
+            final.success = False
+            return final
+
+        return ExecutionTrace(
             task_id=task.task_id,
             actions=[action],
-            total_latency_ms=sum(r.latency_ms for r in retries),
-            total_cost_usd=0.0,
+            total_latency_ms=retry_latency_ms,
+            total_cost_usd=retry_cost_usd,
             success=False,
             status=TaskStatus.FAILED,
             n_subagent_calls=0,
             retries=retries,
         )
-        return trace
+
+    @staticmethod
+    def _retry_record_from_trace(
+        trace: ExecutionTrace,
+        attempt: int,
+    ) -> RetryRecord:
+        if trace.retries:
+            return trace.retries[-1].model_copy(update={"attempt": attempt})
+        return RetryRecord(
+            attempt=attempt,
+            error=f"Attempt failed with status={trace.status.value}",
+            latency_ms=trace.total_latency_ms,
+        )
 
 
 def _default_simulate(action: OrchestratorAction, seed: int = 42) -> ExecutionTrace:

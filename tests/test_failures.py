@@ -7,6 +7,7 @@ from orchestratebench.core import (
     FixedPolicy,
     HeuristicPolicy,
     OrchestratorAction,
+    RetryPolicy,
     RoutingDecision,
     SubAgentType,
     TaskStatus,
@@ -161,6 +162,36 @@ class TestMeasureCascade:
         )
         assert r_long["cascade_radius"] >= r_short["cascade_radius"]
 
+    def test_retry_policy_recovers_retryable_injected_failure(self) -> None:
+        tasks = make_finance_approval_workflow()
+        policy = RetryPolicy(HeuristicPolicy(), failure_rate=0.0, seed=0)
+        result = measure_cascade(
+            tasks=tasks,
+            policy=policy,
+            injection_stage=0,
+            failure_mode=FailureMode.TOOL_INVOCATION_ERROR,
+            seed=0,
+        )
+        assert result["injected_task_success"] is True
+        assert result["final_task_success"] is True
+        assert result["cascade_radius"] == 0
+        assert result["escalated"] is False
+
+    def test_retry_policy_does_not_magically_fix_non_retryable_failure(self) -> None:
+        tasks = make_finance_approval_workflow()
+        policy = RetryPolicy(HeuristicPolicy(), failure_rate=0.0, seed=0)
+        result = measure_cascade(
+            tasks=tasks,
+            policy=policy,
+            injection_stage=0,
+            failure_mode=FailureMode.CONTEXT_POLLUTION,
+            seed=0,
+        )
+        assert result["injected_task_success"] is False
+        assert result["final_task_success"] is False
+        assert result["cascade_radius"] >= 1
+        assert result["escalated"] is True
+
 
 # ---------------------------------------------------------------------------
 # recovery_rate_by_mode — aggregate metrics per failure mode
@@ -187,3 +218,23 @@ class TestRecoveryRateByMode:
         a = recovery_rate_by_mode(tasks, FixedPolicy(), n_runs=5, seed=42)
         b = recovery_rate_by_mode(tasks, FixedPolicy(), n_runs=5, seed=42)
         assert a == b
+
+    def test_retry_policy_improves_retryable_mode_recovery(self) -> None:
+        tasks = make_finance_approval_workflow()
+        fixed = recovery_rate_by_mode(
+            tasks,
+            FixedPolicy(),
+            modes=[FailureMode.TOOL_INVOCATION_ERROR],
+            n_runs=3,
+            seed=0,
+        )
+        retry = recovery_rate_by_mode(
+            tasks,
+            RetryPolicy(HeuristicPolicy(), failure_rate=0.0, seed=0),
+            modes=[FailureMode.TOOL_INVOCATION_ERROR],
+            n_runs=3,
+            seed=0,
+        )
+        mode = FailureMode.TOOL_INVOCATION_ERROR.value
+        assert retry[mode]["recovery_rate"] >= fixed[mode]["recovery_rate"]
+        assert retry[mode]["final_task_success_rate"] >= fixed[mode]["final_task_success_rate"]

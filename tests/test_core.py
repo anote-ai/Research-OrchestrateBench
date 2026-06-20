@@ -189,6 +189,39 @@ def test_retry_policy_zero_failure_rate() -> None:
     assert trace.n_retries == 0
 
 
+def test_retry_policy_retries_when_simulator_returns_failed_trace() -> None:
+    inner = FixedPolicy()
+    policy = RetryPolicy(inner, failure_rate=0.0, seed=1)
+    task = make_task("recover after injected failure", complexity=0.3, max_retries=2)
+    attempts = {"count": 0}
+
+    def fail_once(action: OrchestratorAction) -> ExecutionTrace:
+        attempts["count"] += 1
+        if attempts["count"] == 1:
+            return ExecutionTrace(
+                task_id=action.task_id,
+                actions=[action],
+                total_latency_ms=125.0,
+                total_cost_usd=0.01,
+                success=False,
+                status=TaskStatus.FAILED,
+            )
+        return ExecutionTrace(
+            task_id=action.task_id,
+            actions=[action],
+            total_latency_ms=50.0,
+            total_cost_usd=0.002,
+            success=True,
+            status=TaskStatus.SUCCESS,
+        )
+
+    trace = policy.execute_with_retry(task, simulate_fn=fail_once)
+    assert trace.success is True
+    assert trace.n_retries == 1
+    assert trace.total_latency_ms == 175.0
+    assert trace.total_cost_usd == 0.012
+
+
 def test_default_simulate_is_deterministic_for_same_action() -> None:
     action = OrchestratorAction(
         task_id="task-123",

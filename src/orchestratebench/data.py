@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import random
+import uuid
 from typing import List, Optional
 
 from .core import (
@@ -73,6 +74,7 @@ SAMPLE_TASKS_RAW: List[dict] = [
 def make_finance_approval_workflow() -> List[AgentTask]:
     """Multi-stage purchase-order approval workflow (finance domain)."""
     t1 = AgentTask(
+        task_id="finance_extract_invoice",
         description="Extract invoice fields (amount, vendor, due date) from PDF.",
         complexity_score=0.4,
         requires_code=False,
@@ -81,6 +83,7 @@ def make_finance_approval_workflow() -> List[AgentTask]:
         metadata={"stage": "extraction", "domain": "finance"},
     )
     t2 = AgentTask(
+        task_id="finance_validate_po",
         description="Validate invoice against purchase-order database.",
         complexity_score=0.5,
         requires_code=True,
@@ -90,6 +93,7 @@ def make_finance_approval_workflow() -> List[AgentTask]:
         metadata={"stage": "validation", "domain": "finance"},
     )
     t3 = AgentTask(
+        task_id="finance_route_manager",
         description="Route to manager if amount exceeds approval threshold.",
         complexity_score=0.3,
         requires_code=False,
@@ -99,6 +103,7 @@ def make_finance_approval_workflow() -> List[AgentTask]:
         metadata={"stage": "routing", "domain": "finance"},
     )
     t4 = AgentTask(
+        task_id="finance_post_erp",
         description="Post approved payment to ERP system and notify AP team.",
         complexity_score=0.6,
         requires_code=True,
@@ -113,6 +118,7 @@ def make_finance_approval_workflow() -> List[AgentTask]:
 def make_hr_onboarding_workflow() -> List[AgentTask]:
     """New-employee onboarding workflow (HR domain)."""
     t1 = AgentTask(
+        task_id="hr_collect_candidate_details",
         description="Collect signed offer letter and personal details from candidate.",
         complexity_score=0.2,
         requires_code=False,
@@ -121,6 +127,7 @@ def make_hr_onboarding_workflow() -> List[AgentTask]:
         metadata={"stage": "intake", "domain": "hr"},
     )
     t2 = AgentTask(
+        task_id="hr_run_background_check",
         description="Run background check via third-party screening API.",
         complexity_score=0.5,
         requires_code=True,
@@ -131,6 +138,7 @@ def make_hr_onboarding_workflow() -> List[AgentTask]:
         metadata={"stage": "screening", "domain": "hr"},
     )
     t3 = AgentTask(
+        task_id="hr_provision_accounts",
         description="Provision SSO accounts, email, and Slack workspace.",
         complexity_score=0.6,
         requires_code=True,
@@ -141,6 +149,7 @@ def make_hr_onboarding_workflow() -> List[AgentTask]:
         metadata={"stage": "provisioning", "domain": "hr"},
     )
     t4 = AgentTask(
+        task_id="hr_schedule_orientation",
         description="Schedule orientation sessions and assign onboarding buddy.",
         complexity_score=0.3,
         requires_code=False,
@@ -150,6 +159,7 @@ def make_hr_onboarding_workflow() -> List[AgentTask]:
         metadata={"stage": "scheduling", "domain": "hr"},
     )
     t5 = AgentTask(
+        task_id="hr_send_welcome_email",
         description="Send welcome email with first-week agenda to new hire.",
         complexity_score=0.1,
         requires_code=False,
@@ -164,6 +174,7 @@ def make_hr_onboarding_workflow() -> List[AgentTask]:
 def make_devops_deploy_workflow() -> List[AgentTask]:
     """CI/CD deployment pipeline workflow (DevOps domain)."""
     t1 = AgentTask(
+        task_id="devops_run_tests",
         description="Run unit and integration test suite against PR branch.",
         complexity_score=0.7,
         requires_code=True,
@@ -173,6 +184,7 @@ def make_devops_deploy_workflow() -> List[AgentTask]:
         metadata={"stage": "test", "domain": "devops"},
     )
     t2 = AgentTask(
+        task_id="devops_build_image",
         description="Build Docker image and push to container registry.",
         complexity_score=0.6,
         requires_code=True,
@@ -183,6 +195,7 @@ def make_devops_deploy_workflow() -> List[AgentTask]:
         metadata={"stage": "build", "domain": "devops"},
     )
     t3 = AgentTask(
+        task_id="devops_run_security_scan",
         description="Run SAST and container vulnerability scan.",
         complexity_score=0.5,
         requires_code=True,
@@ -192,6 +205,7 @@ def make_devops_deploy_workflow() -> List[AgentTask]:
         metadata={"stage": "security", "domain": "devops"},
     )
     t4 = AgentTask(
+        task_id="devops_deploy_staging",
         description="Deploy to staging environment and run smoke tests.",
         complexity_score=0.8,
         requires_code=True,
@@ -202,6 +216,7 @@ def make_devops_deploy_workflow() -> List[AgentTask]:
         metadata={"stage": "staging", "domain": "devops"},
     )
     t5 = AgentTask(
+        task_id="devops_promote_canary",
         description="Promote image to production with canary rollout (5% traffic).",
         complexity_score=0.9,
         requires_code=True,
@@ -231,6 +246,7 @@ def make_linear_pipeline(
     prev_id: Optional[str] = None
     for i in range(n_stages):
         task = AgentTask(
+            task_id=f"{domain}-stage-{i + 1}-seed-{seed}",
             description=f"{domain} pipeline stage {i + 1}/{n_stages}",
             complexity_score=round(rng.uniform(0.2, 0.9), 3),
             requires_code=rng.random() < 0.5,
@@ -251,8 +267,10 @@ def make_task(
     timeout_ms: float = 5000.0,
     max_retries: int = 2,
     dependencies: Optional[List[str]] = None,
+    task_id: Optional[str] = None,
 ) -> AgentTask:
     return AgentTask(
+        task_id=task_id or str(uuid.uuid4())[:8],
         description=description,
         complexity_score=complexity,
         requires_code=requires_code,
@@ -268,6 +286,7 @@ def make_benchmark_tasks(n: int = 20, seed: int = 42) -> List[AgentTask]:
     tasks = []
     for i in range(n):
         raw = rng.choice(SAMPLE_TASKS_RAW).copy()
+        raw["task_id"] = f"benchmark-{seed}-{i}"
         raw["complexity_score"] = rng.uniform(0.1, 1.0)
         tasks.append(AgentTask(**raw))
     return tasks

@@ -1,0 +1,4 @@
+policy,workflow,failure_mode,run,injection_stage,injected_task_success,final_task_success,cascade_radius,recovery_completeness,time_to_detection_ms,escalated,escalation_latency_ms,scenario_id,annotator
+fixed,finance_approval,tool_invocation_error,0,1,false,false,3,0.0,410.0,true,410.0,finance_tool_stage1_run0,yg
+heuristic,finance_approval,tool_invocation_error,0,1,false,true,1,0.75,190.0,true,190.0,finance_tool_stage1_run0,yg
+retry(heuristic),finance_approval,tool_invocation_error,0,1,true,true,0,1.0,60.0,false,0.0,finance_tool_stage1_run0,yg
