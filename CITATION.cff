@@ -1,0 +1,22 @@
+cff-version: 1.2.0
+message: "If you use OrchestrateBench, please cite this repository using the metadata below."
+title: "OrchestrateBench"
+type: software
+version: 0.1.0
+date-released: 2026-06-20
+abstract: >-
+  OrchestrateBench is a research benchmark for evaluating LLM orchestration
+  routing, failure recovery, and cascade propagation in multi-agent systems.
+authors:
+  - family-names: Chen
+    given-names: Yidian
+  - family-names: Gu
+    given-names: Yingzi
+repository-code: "https://github.com/anote-ai/Research-OrchestrateBench"
+url: "https://github.com/anote-ai/Research-OrchestrateBench"
+keywords:
+  - llm orchestration
+  - multi-agent systems
+  - benchmarking
+  - failure recovery
+  - cascade propagation

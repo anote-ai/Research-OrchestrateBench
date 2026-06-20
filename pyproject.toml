@@ -8,6 +8,17 @@ version = "0.1.0"
 description = "Benchmark for LLM orchestration and routing policies"
 readme = "README.md"
 requires-python = ">=3.10"
+authors = [
+    {name = "Yidian Chen"},
+    {name = "Yingzi Gu"},
+]
+keywords = [
+    "llm",
+    "multi-agent",
+    "benchmark",
+    "routing",
+    "reproducibility",
+]
 dependencies = [
     "numpy>=1.24",
     "pandas>=2.0",
@@ -20,6 +31,11 @@ dependencies = [
 dev = [
     "pytest>=9.0",
 ]
+
+[project.urls]
+Repository = "https://github.com/anote-ai/Research-OrchestrateBench"
+"Design Doc" = "https://github.com/anote-ai/Research-OrchestrateBench/blob/main/DESIGN_DOC.md"
+"Reproducibility Guide" = "https://github.com/anote-ai/Research-OrchestrateBench/blob/main/REPRODUCIBILITY.md"
 
 [tool.setuptools.packages.find]
 where = ["src"]
