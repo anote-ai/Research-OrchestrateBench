@@ -1,4 +1,4 @@
-# OrchestraBench — Research Design Document
+# OrchestrateBench — Research Design Document
 
 **Paper #11 (T7 Orchestration)**  
 **Authors**: Yidian Chen, Yingzi Gu  
@@ -24,7 +24,7 @@ breakdown. This gap directly blocks production deployment decisions: teams canno
 orchestration frameworks (AutoGen, LangGraph, CrewAI, Anthropic Agents SDK) on reliability, only on
 accuracy.
 
-OrchestraBench fills this gap with controlled failure injection, per-failure-mode attribution,
+OrchestrateBench fills this gap with controlled failure injection, per-failure-mode attribution,
 cascade propagation measurement, and routing-policy comparison.
 
 ### Research Questions
@@ -40,14 +40,14 @@ cascade propagation measurement, and routing-policy comparison.
 
 ### Related Work & Differentiation
 
-| Prior work | What it does | How OrchestraBench differs |
+| Prior work | What it does | How OrchestrateBench differs |
 |---|---|---|
 | **MAST** — *Why Do Multi-Agent LLM Systems Fail?* (arXiv:2503.13657) | Taxonomy of observed MAS failures (14 modes, 1,600+ traces, κ=0.88) | We **inject** that taxonomy under controlled, seed-reproducible conditions and measure recovery + cascade per mode |
 | **MAS-FIRE** (arXiv:2602.19843) | Fault injection + reliability evaluation for multi-agent systems | **Closest external work.** We lead with **routing-policy comparison** and **cascade radius across pipeline depths**, not reliability scoring alone |
 | **TraceElephant** (arXiv:2604.22708) | Post-hoc failure attribution in multi-agent systems | Observational; we add controlled seeding, recovery measurement, and cascade radius as primary metrics |
 | **Agents Failure Attribution** (ICML 2025 Spotlight) | Post-hoc attribution to the responsible agent/step | Attribution is a means here, not the end product |
 | **Doctor-RAG** (arXiv:2604.00865) | Diagnose + repair RAG failures | RAG-specific repair; we target orchestration-level routing/decomposition, not retrieval repair |
-| **AdaptOrch** (arXiv:2602.16873) | A task-adaptive orchestration framework | A method; OrchestraBench is the benchmark that would evaluate it |
+| **AdaptOrch** (arXiv:2602.16873) | A task-adaptive orchestration framework | A method; OrchestrateBench is the benchmark that would evaluate it |
 | **"From Spark to Fire"** (arXiv:2603.04474) | Shows errors cascade exponentially in pipelines | We operationalize this into a measurable cascade-radius benchmark |
 
 **External novelty risk.** MAS-FIRE already performs controlled fault injection + reliability
@@ -60,7 +60,7 @@ result** of Experiment 1, which MAS-FIRE does not address.
 depth** — it notes only qualitatively that a corrupted output "propagates downstream unchecked,"
 with no stages-traversed metric — **and does not vary routing policy**: its experimental axes are
 *topology* (linear / iterative / bilateral; MetaGPT vs. Table-Critic vs. CAMEL), fault type (15
-categories), and foundation model, not routing strategy. Both of OrchestraBench's primary
+categories), and foundation model, not routing strategy. Both of OrchestrateBench's primary
 differentiators — cascade radius across depths and per-routing-policy failure handling — are
 therefore *uncovered* by MAS-FIRE, not merely framed differently.
 
@@ -83,7 +83,7 @@ overlap to resolve — the papers should simply cross-cite.
 
 ### Literature Review
 
-We organize prior work into four strands and position OrchestraBench against each.
+We organize prior work into four strands and position OrchestrateBench against each.
 
 **(1) Agent benchmarks measure final-task success, not orchestration.** AgentBench, SWE-Bench, and
 OdysseyBench evaluate whether an agent completes a task but report a single success signal — they
@@ -91,12 +91,12 @@ cannot say *which* orchestration decision (route, decompose, code-vs-reason) fai
 spread. *Beyond the Strongest* (arXiv:2509.23537) quantifies the cost of this blind spot: on
 GPQA-Diamond at least one agent was correct in 95.5% of cases, yet orchestration delivered only
 87.4% — ~8 points of individually-recoverable correctness discarded by the orchestration layer.
-OrchestraBench is built to attribute exactly this loss.
+OrchestrateBench is built to attribute exactly this loss.
 
 **(2) Failure taxonomies and post-hoc attribution observe failures; they do not intervene.** MAST
 (arXiv:2503.13657) catalogs 14 multi-agent failure modes over 1,600+ traces (κ=0.88) but is purely
 descriptive. TraceElephant (arXiv:2604.22708) and the ICML 2025 attribution work assign a failure to
-the responsible agent/step *after the fact*. OrchestraBench instead **injects** the MAST taxonomy
+the responsible agent/step *after the fact*. OrchestrateBench instead **injects** the MAST taxonomy
 under seed control and measures recovery per mode — attribution becomes a means, not the product.
 
 **(3) Fault injection and cascade — the closest strand, and our main novelty risk.** MAS-FIRE
@@ -105,7 +105,7 @@ rewriting, and message-routing manipulation, defines a 15-type fault taxonomy, a
 four tiers. Crucially, its comparative axis is **architectural topology** — it finds iterative designs
 neutralize more faults than linear workflows — **not routing policy**. *From Spark to Fire*
 (arXiv:2603.04474) shows errors cascade super-linearly in pipelines but ships no benchmark.
-OrchestraBench's daylight from MAS-FIRE is therefore specific and defensible: we make **cascade radius
+OrchestrateBench's daylight from MAS-FIRE is therefore specific and defensible: we make **cascade radius
 across pipeline depths** a first-class metric and condition failure handling on **routing policy
 (Fixed / Heuristic / LLM / Oracle)**, a dimension MAS-FIRE does not vary. (Terminology caveat:
 MAS-FIRE's "message-routing manipulation" is a fault-injection *mechanism*; our "routing policy" is
@@ -115,14 +115,14 @@ the orchestration decision *under study* — the paper must disambiguate these e
 (arXiv:2602.16873) is a task-adaptive orchestration *method*; the orchestration-pattern benchmark
 (arXiv:2603.22651) compares sequential/parallel/hierarchical/reflexive *architectures* on a
 cost-accuracy Pareto; Doctor-RAG (arXiv:2604.00865) diagnoses and repairs *retrieval* failures.
-OrchestraBench is complementary: it is the reliability benchmark these methods would be scored on, and
+OrchestrateBench is complementary: it is the reliability benchmark these methods would be scored on, and
 it targets the routing/decomposition decision layer rather than retrieval repair or one architecture
 family.
 
 **Synthesis — the gap.** No existing work ships a *controlled, reproducible injection harness that
 measures recovery and cascade containment as first-class metrics, compared across routing policies.*
 That intersection — injection (vs. observation), cascade radius (vs. reliability score), and
-routing-policy conditioning (vs. topology) — is OrchestraBench's contribution.
+routing-policy conditioning (vs. topology) — is OrchestrateBench's contribution.
 
 ---
 
@@ -190,7 +190,14 @@ include gold labels.
 - **Metrics**: per-failure-mode recovery rate, escalation latency, and final task accuracy under
   failure.
 - **Scale**: 100 traces per failure mode × 5 modes × 3 policies = 1,500 traces.
-- **Status**: scaffolded by PR #21; numbers below remain hypotheses until Exp 2 is run.
+- **Status**: scaffolded by PR #21 and now aligned in code with retry-aware offline harness metrics
+  (`recovery_rate`, `final_task_success_rate`, `mean_time_to_detection_ms`,
+  `mean_escalation_latency_ms`, `mean_cascade_radius`). The runner now also exports long-form raw
+  runs, grouped CSV/JSON summaries, and paired bootstrap policy-comparison artifacts for
+  workflow-level review. It can now also ingest *measured* collaborative records from `.csv`,
+  `.jsonl`, or `.json` via `--input-file`, with schema validation in
+  `scripts/validate_measured_input.py`, and emit paper-facing markdown / LaTeX tables; numbers
+  below remain hypotheses until the collaborative Exp 2 run is completed.
 
 ### Experiment 3 — Cascade propagation depth *(in progress — core, with Y. Gu / #7)*
 
@@ -198,8 +205,14 @@ include gold labels.
   many downstream stages are corrupted.
 - **Metrics**: cascade radius, time-to-detection, recovery completeness score.
 - **Scale**: 100 traces per injection point × 3 depths × 3 injection points = 900 traces.
-- **Status**: scaffolded by PR #21; this is the primary differentiation against generic fault
-  injection work.
+- **Status**: scaffolded by PR #21 and now exposed in code via depth-wise diagnostics
+  (`mean_cascade_radius`, `mean_recovery_completeness`, `final_task_success_rate`,
+  `mean_time_to_detection_ms`). The current runner now sweeps injection stages 1/2/3 and exports
+  long-form raw runs, grouped CSV/JSON summaries, and paired bootstrap policy-comparison artifacts.
+  It can now also ingest *measured* collaborative records from `.csv`, `.jsonl`, or `.json` via
+  `--input-file`, with schema validation in `scripts/validate_measured_input.py`, and emit
+  paper-facing markdown / LaTeX tables; this remains the primary differentiation against generic
+  fault injection work.
 
 ### Experiment 4 — Decomposition quality
 
@@ -282,9 +295,9 @@ This matters because:
 - **Production failures are silent**: a misrouted task might still produce a plausible-looking answer.
   Without failure attribution, teams cannot distinguish "working" from "lucky."
 - **Cascade failures are the #1 production risk**: prior work shows errors can propagate through
-  pipelines; OrchestraBench makes cascade radius a primary metric.
+  pipelines; OrchestrateBench makes cascade radius a primary metric.
 - **Framework selection is currently guesswork**: teams choose AutoGen vs. LangGraph based on API
-  ergonomics, not measured reliability. OrchestraBench enables apples-to-apples comparison on
+  ergonomics, not measured reliability. OrchestrateBench enables apples-to-apples comparison on
   failure handling.
 - **Direct Anote product integration (#14)**: the same keyword-routing weakness exists in Panacea
   (`multi_agent_system.py`); a flag-gated model-driven router was added there (PR #222) as the
@@ -295,19 +308,19 @@ This matters because:
 ## 8. Why People Would Care
 
 **For ML engineers / AI engineers**: "My multi-agent pipeline works on demos but fails unpredictably
-in production. OrchestraBench tells me which failure modes my orchestrator cannot handle and how far
+in production. OrchestrateBench tells me which failure modes my orchestrator cannot handle and how far
 errors cascade — before I ship."
 
-**For framework maintainers** (AutoGen, LangGraph, CrewAI teams): OrchestraBench provides a
+**For framework maintainers** (AutoGen, LangGraph, CrewAI teams): OrchestrateBench provides a
 standardized reliability leaderboard. Being ranked on failure recovery, not just task success,
 differentiates frameworks on the axis production teams care about.
 
 **For the research community**: Existing agent benchmarks do not cover orchestration-level decisions.
-OrchestraBench fills the gap between "can the agent solve the task?" and "can the orchestrator route,
+OrchestrateBench fills the gap between "can the agent solve the task?" and "can the orchestrator route,
 recover, and decompose reliably?"
 
 **For Anote**: The benchmark directly informs Panacea's agent architecture. Every failure mode we
-discover in OrchestraBench becomes a hardening target for the production system. Research → product
+discover in OrchestrateBench becomes a hardening target for the production system. Research → product
 is a 1:1 pipeline, not an afterthought.
 
 ---
@@ -317,6 +330,12 @@ is a 1:1 pipeline, not an afterthought.
 Every reported number should be regenerable from a fixed seed. Artifact-release checklist:
 
 - [x] Harness, four routing policies, statistics module, and failure injector scaffolded in code.
+- [x] Exp 2/3 offline harness now exposes retry-aware recovery, detection, escalation, and cascade
+  diagnostics from stable workflow seeds / task IDs.
+- [x] Exp 2/3 scripts now export machine-readable raw runs and grouped summaries for plots/tables.
+- [x] Exp 2/3 scripts now export paired policy-comparison artifacts for statistical write-up.
+- [x] Exp 2/3 measured-input schema, templates, and validator are in repo for collaborative runs.
+- [x] Exp 2/3 scripts now emit paper-facing markdown / LaTeX summary artifacts from the same run.
 - [x] Experiment 1 diagnostic has measured Fixed / Heuristic / LLM / Oracle results.
 - [ ] Exp 2/3/4 measured results.
 - [ ] Full workflow-suite seeds + held-out split.
@@ -335,6 +354,9 @@ used.
 - **Measured**: Experiment 1 routing diagnostic (PR #26), with LLM-as-Router at 100% overall and 100%
   adversarial.
 - **Merged scaffolding**: statistical rigor (PR #20) and failure injection/cascade framework (PR #21).
+- **Codebase status**: Exp 2/3 harness now supports retry-wrapped policies and emits recovery,
+  final-task-success, detection, escalation, and cascade diagnostics in the offline scripts. Those
+  scripts now also accept measured long-form collaborative inputs and preflight validation.
 - **In progress with Y. Gu**: Experiment 2 failure taxonomy (#4) and Experiment 3 cascade propagation
   (#7). These should not be finalized solo.
 - **Open differentiation items for 6/16 standup**: MAS-FIRE external overlap and Paper #2 internal

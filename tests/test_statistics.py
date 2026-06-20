@@ -8,6 +8,7 @@ from orchestratebench.statistics import (
     bootstrap_ci,
     metric_ci,
     paired_bootstrap_test,
+    paired_bootstrap_values,
 )
 
 import pytest
@@ -73,6 +74,25 @@ def test_metric_ci_empty_returns_point_thrice() -> None:
 # ---------------------------------------------------------------------------
 # paired_bootstrap_test
 # ---------------------------------------------------------------------------
+
+
+def test_paired_bootstrap_values_identical_lists_no_difference() -> None:
+    res = paired_bootstrap_values([1.0, 2.0, 3.0], [1.0, 2.0, 3.0], seed=0)
+    assert res["diff"] == pytest.approx(0.0)
+    assert res["p_value"] == pytest.approx(1.0)
+
+
+def test_paired_bootstrap_values_clear_difference_is_significant() -> None:
+    res = paired_bootstrap_values([1.0] * 20, [0.0] * 20, seed=0)
+    assert res["diff"] == pytest.approx(1.0)
+    assert res["mean_a"] == pytest.approx(1.0)
+    assert res["mean_b"] == pytest.approx(0.0)
+    assert res["p_value"] < 0.05
+
+
+def test_paired_bootstrap_values_length_mismatch_raises() -> None:
+    with pytest.raises(ValueError, match="equal-length"):
+        paired_bootstrap_values([1.0], [1.0, 2.0])
 
 
 def test_paired_identical_traces_no_difference() -> None:
