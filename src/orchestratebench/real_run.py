@@ -129,6 +129,56 @@ def _prompt(
     return clean, False
 
 
+ROLES = ("Intake Officer", "Risk Analyst", "Compliance Officer", "Approval Manager",
+         "Audit Reviewer", "Settlement Clerk", "Portfolio Lead")
+_ACTION = {
+    "+": "add the processing fee of {n} (i.e., compute {u} + {n})",
+    "*": "apply the risk multiplier of {n} (i.e., compute {u} * {n})",
+    "-": "deduct the {n} adjustment (i.e., compute {u} - {n})",
+}
+
+
+def _domain_prompt(
+    stage: Stage, upstream_claimed: Optional[int], mode: Optional[FailureMode]
+) -> Tuple[str, bool]:
+    """Domain-grounded (loan-approval) framing of the SAME verifiable computation, each stage
+    handled by a role agent. Identical numeric ground truth as `_prompt`; only the framing is
+    domain / multi-role. Failure modes are injected exactly as in `_prompt` (addresses the
+    construct-validity question: do the cascade/recovery signatures survive a realistic,
+    role-played workflow, not just abstract arithmetic?)."""
+    role = ROLES[stage.idx % len(ROLES)]
+    if stage.idx == 0:
+        return (f"You are the {role} opening a new loan-approval case. Record the principal "
+                f"amount. Output exactly one line: RESULT={stage.operand}"), False
+    act = _ACTION[stage.op].format(n=stage.operand, u=upstream_claimed)
+    cap = act[0].upper() + act[1:]
+    clean = (f"You are the {role} in a loan-approval pipeline. The prior stage reported a working "
+             f"value of {upstream_claimed}. {cap}. Output exactly one line: RESULT=<integer>.")
+    if mode is None:
+        return clean, False
+    rng = random.Random(stage.idx * 31 + 7)
+    if mode == FailureMode.CONTEXT_POLLUTION:
+        bogus = (upstream_claimed or 0) + rng.choice([-7, -5, -3, 3, 5, 7])
+        act_b = _ACTION[stage.op].format(n=stage.operand, u=bogus)
+        return (f"You are the {role}. The prior stage reported a working value of {bogus}. "
+                f"{act_b[0].upper()}{act_b[1:]}. Output RESULT=<integer>."), True
+    if mode == FailureMode.TOOL_INVOCATION_ERROR:
+        return (f"You are the {role}. [The risk-scoring system is unavailable.] Prior value "
+                f"{upstream_claimed}. {cap} by hand. Output RESULT=<integer>."), True
+    if mode == FailureMode.AMBIGUOUS_DELEGATION:
+        return (f"You are the {role}. Prior value {upstream_claimed}. Apply the standard adjustment "
+                f"with factor {stage.operand}. Output RESULT=<integer>."), True
+    if mode == FailureMode.CONFLICTING_OUTPUTS:
+        wrong = (upstream_claimed or 0) + rng.choice([-6, -4, 4, 6])
+        return (f"You are the {role}. Two analysts disagree on the prior value: one reports "
+                f"{upstream_claimed}, the other {wrong}. Apply the {stage.op} {stage.operand} step. "
+                f"Output RESULT=<integer>."), True
+    if mode == FailureMode.PREMATURE_ACTION:
+        return (f"You are the {role}. The prior stage has NOT submitted its value yet. Still, perform "
+                f"the {stage.op} {stage.operand} step now. Output RESULT=<integer>."), True
+    return clean, False
+
+
 def _parse(text: str) -> Optional[int]:
     m = re.search(r"RESULT\s*=\s*(-?\d+)", text)
     return int(m.group(1)) if m else None
@@ -167,7 +217,8 @@ def _mock_value(
 
 
 def measure_chain(
-    client, n_stages: int, injection_stage: int, mode: FailureMode, policy: str, seed: int
+    client, n_stages: int, injection_stage: int, mode: FailureMode, policy: str, seed: int,
+    prompt_fn=_prompt,
 ) -> dict:
     """Run one chain with `mode` injected at `injection_stage`; measure real cascade/recovery."""
     stages = build_chain(n_stages, seed)
@@ -177,7 +228,7 @@ def measure_chain(
     use_mock = MOCK or client is None
     for s in stages:
         m = mode if s.idx == injection_stage else None
-        prompt, injected = _prompt(s, upstream, m)
+        prompt, injected = prompt_fn(s, upstream, m)
         prev_gold = stages[s.idx - 1].gold if s.idx > 0 else None
         if use_mock:
             val, lat = _mock_value(s, prev_gold, upstream, m, injected), 0.0
@@ -191,7 +242,7 @@ def measure_chain(
                 val = s.gold if m == FailureMode.TOOL_INVOCATION_ERROR else val
                 lat2 = 0.0
             else:
-                prompt_r, _ = _prompt(s, upstream, m)  # same failure persists on retry
+                prompt_r, _ = prompt_fn(s, upstream, m)  # same failure persists on retry
                 val, lat2 = _call_claude(client, prompt_r)
             lat += lat2
         succeeded.append(val == s.gold)
@@ -227,18 +278,21 @@ def _write_csv(rows: List[dict], fields: List[str], out_csv: str) -> None:
 def run_exp2(
     client, out_csv: str, n_stages: int = 4, n_runs: int = 3,
     modes: Optional[List[FailureMode]] = None, policies: Tuple[str, ...] = POLICIES,
+    domain: bool = False,
 ) -> List[dict]:
     modes = modes or list(FailureMode)
+    pf = _domain_prompt if domain else _prompt
+    wf = "loan_approval" if domain else "arith_chain"
     rows: List[dict] = []
     for mode in modes:
         for policy in policies:
             for run in range(n_runs):
                 # same chain (seed=run) across policies -> paired comparison; inject at stage 1
-                r = measure_chain(client, n_stages, 1, mode, policy, seed=run)
+                r = measure_chain(client, n_stages, 1, mode, policy, seed=run, prompt_fn=pf)
                 rows.append({
-                    "policy": policy, "workflow": "arith_chain", "failure_mode": mode.value,
+                    "policy": policy, "workflow": wf, "failure_mode": mode.value,
                     "run": run, **r,
-                    "scenario_id": f"{mode.value}_{policy}_r{run}", "annotator": "yc-real",
+                    "scenario_id": f"{wf}_{mode.value}_{policy}_r{run}", "annotator": "yc-real",
                 })
     _write_csv(rows, CSV_FIELDS, out_csv)
     return rows
@@ -247,12 +301,13 @@ def run_exp2(
 def run_exp3(
     client, out_csv: str, depths: Tuple[int, ...] = (3, 5, 7), n_runs: int = 3,
     injection_stage: int = 1, modes: Optional[List[FailureMode]] = None,
-    policies: Tuple[str, ...] = POLICIES,
+    policies: Tuple[str, ...] = POLICIES, domain: bool = False,
 ) -> List[dict]:
     """Cascade-by-depth (#7): fix an early injection, vary chain depth, measure how
     far the failure propagates downstream. Same seed across depths shares the chain
     prefix, so deeper runs differ only by how many downstream stages exist."""
     modes = modes or list(FailureMode)
+    pf = _domain_prompt if domain else _prompt
     rows: List[dict] = []
     for depth in depths:
         if injection_stage >= depth - 1:  # need >=1 downstream stage to observe cascade
@@ -260,13 +315,13 @@ def run_exp3(
         for mode in modes:
             for policy in policies:
                 for run in range(n_runs):
-                    r = measure_chain(client, depth, injection_stage, mode, policy, seed=run)
+                    r = measure_chain(client, depth, injection_stage, mode, policy, seed=run, prompt_fn=pf)
                     inj = r["injection_stage"]
                     rows.append({
                         "policy": policy, "depth": depth, "failure_mode": mode.value,
                         "run": run, "seed": run, **r,
                         "scenario_id": f"depth{depth}__{mode.value}__inj{inj}__run{run:04d}",
-                        "annotator": "yc-real", "notes": "",
+                        "annotator": "yc-real", "notes": "loan_approval" if domain else "",
                     })
     _write_csv(rows, EXP3_CSV_FIELDS, out_csv)
     return rows
@@ -289,12 +344,13 @@ def main() -> None:
     ap.add_argument("--stages", type=int, default=4, help="Exp 2 chain length")
     ap.add_argument("--depths", default="3,5,7", help="Exp 3 chain depths (comma-separated)")
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--domain", action="store_true", help="domain-grounded loan-approval workflow (role agents) instead of bare arithmetic")
     args = ap.parse_args()
     client = _client()
     tag = "MOCK" if MOCK else f"real Claude ({DEFAULT_MODEL})"
     if args.exp == 2:
-        out = args.out or "data/measured/exp2_real.csv"
-        rows = run_exp2(client, out, n_stages=args.stages, n_runs=args.runs)
+        out = args.out or ("data/measured/exp2_domain_real.csv" if args.domain else "data/measured/exp2_real.csv")
+        rows = run_exp2(client, out, n_stages=args.stages, n_runs=args.runs, domain=args.domain)
         print(f"[{tag}] Exp2: wrote {len(rows)} rows -> {out}")
         agg = defaultdict(list)
         for r in rows:
@@ -302,9 +358,9 @@ def main() -> None:
         for mode, fs in sorted(agg.items()):
             print(f"  {mode:24s} final_success_rate={sum(fs) / len(fs):.2f}  (n={len(fs)})")
     else:
-        out = args.out or "data/measured/exp3_real.csv"
+        out = args.out or ("data/measured/exp3_domain_real.csv" if args.domain else "data/measured/exp3_real.csv")
         depths = tuple(int(d) for d in args.depths.split(",") if d.strip())
-        rows = run_exp3(client, out, depths=depths, n_runs=args.runs)
+        rows = run_exp3(client, out, depths=depths, n_runs=args.runs, domain=args.domain)
         print(f"[{tag}] Exp3: wrote {len(rows)} rows -> {out}")
         agg = defaultdict(list)
         for r in rows:

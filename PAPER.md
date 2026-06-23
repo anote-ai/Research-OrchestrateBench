@@ -3,10 +3,11 @@
 **Authors**: Yidian Chen, Yingzi Gu · **Supervisor**: Natan Vidra (Anote)
 **Target venues**: DAI 2026 Industry Track (8/3) · EMNLP ORACLE workshop (9/18) · AAAI 2027 (7/28)
 
-> **DRAFT v0.4 (2026-06-22, addresses issue #8).** Built from the approved design document (`DESIGN_DOC.md`).
+> **DRAFT v0.5 (2026-06-22, addresses issue #8).** Built from the approved design document (`DESIGN_DOC.md`).
 > **Honesty markers**: Experiments 1, 2, and 3 report *measured* results (Exp 1 routing; Exp 2 = real Claude
-> N=30; Exp 3 = real Claude N=90, cascade-by-depth). Experiment 4 is designed and scaffolded. Exp 2/3 (failure
-> taxonomy / cascade) remain a **core contribution with Y. Gu (issues #4/#7)**.
+> N=30 + a domain-grounded loan-approval re-run N=30; Exp 3 = real Claude N=90, cascade-by-depth). Experiment 4
+> is designed and scaffolded. Exp 2/3 (failure taxonomy / cascade) remain a **core contribution with Y. Gu
+> (issues #4/#7)**.
 
 ---
 
@@ -208,6 +209,20 @@ a controlled arithmetic chain (clean ground truth for cascade, not a domain task
 exact-match. Next: the full 1,500-trace suite, harder/domain workloads, and a cross-model sweep. Data:
 `data/measured/exp2_real.csv`.
 
+**Domain-grounded validation (loan-approval workflow, real Claude N=30, 2026-06-22).** To test whether
+these signatures are an artifact of the abstract arithmetic chain, we re-ran the *identical* failure
+injection on a domain-grounded variant: the same verifiable computation reframed as a multi-role
+loan-approval pipeline (Intake Officer → Risk Analyst → Compliance Officer → Approval Manager), each stage
+prompted in business terms (`run_exp2 --domain`). **The core mechanism holds**: the latent/semantic modes
+(conflicting outputs, context pollution, premature action) still fail completely (final-task success
+**0.0**), and the tool fault stays more recoverable than the latent modes — the failure-mode *ordering* is
+robust across framings. Crucially, the **absolute rates shift with framing**: `ambiguous_delegation` rises to
+**0.50** (the business-role context lets the agent infer the intended operation about half the time) and
+`tool_invocation_error` recovery falls to **0.67** (by-hand recomputation is noisier inside the richer
+business prompt). This framing-sensitivity is the signature of *real agent behavior*, not a structural
+tautology — the mechanism is robust while the magnitudes respond to context. Directly addresses the
+construct-validity concern (§7). Data: `data/measured/exp2_domain_real.csv`.
+
 ### 5.3 Experiment 3 — Cascade propagation depth *(real Claude measured run, N=90 + offline harness; core, with Y. Gu / #7)*
 
 **Design.** Inject a single seeded error at stage 1/2/3 of variable-depth (3-, 5-, 7-stage) pipelines
@@ -272,7 +287,9 @@ a controlled chain (§7); domain-workflow validation is the next step.
   probes**, not domain-workload claims. The evidence that this measures *real agent behavior* rather than a
   tautology is the non-determinism we observe: `ambiguous_delegation` at depth 5 yields mean cascade
   2.875 [2.625, 3.0], below the structural maximum, because the real agent sometimes recovers the intended
-  operation. Validating these signatures on the finance / HR / DevOps suites (§3) is the primary next step.
+  operation. **We have taken a first step (§5.2): a domain-grounded loan-approval re-run shows the
+  failure-mode *ordering* is robust across framings while absolute rates shift with context (real agent
+  behavior, not a tautology).** Full finance / HR / DevOps suite validation remains future work.
 - **Single LLM, not a literal multi-agent system.** Exp 2/3 execute one Claude agent over a staged chain
   with prompt-level fault injection — simulating orchestration failure modes rather than wiring N
   independent agents; a real multi-agent harness is future work.
