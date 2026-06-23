@@ -49,6 +49,15 @@ CSV_FIELDS = [
     "escalation_latency_ms", "scenario_id", "annotator",
 ]
 
+# Exp 3 column order matches measured_templates.EXP3_SKELETON_FIELDS so the
+# output feeds the same validate + paper-table pipeline as the skeletons.
+EXP3_CSV_FIELDS = [
+    "policy", "depth", "failure_mode", "run", "seed", "injection_stage",
+    "scenario_id", "injected_task_success", "final_task_success",
+    "cascade_radius", "recovery_completeness", "time_to_detection_ms",
+    "escalated", "escalation_latency_ms", "annotator", "notes",
+]
+
 
 @dataclass
 class Stage:
@@ -207,6 +216,14 @@ def measure_chain(
     }
 
 
+def _write_csv(rows: List[dict], fields: List[str], out_csv: str) -> None:
+    os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
+    with open(out_csv, "w", newline="", encoding="utf-8") as f:
+        w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
+        w.writeheader()
+        w.writerows(rows)
+
+
 def run_exp2(
     client, out_csv: str, n_stages: int = 4, n_runs: int = 3,
     modes: Optional[List[FailureMode]] = None, policies: Tuple[str, ...] = POLICIES,
@@ -223,12 +240,35 @@ def run_exp2(
                     "run": run, **r,
                     "scenario_id": f"{mode.value}_{policy}_r{run}", "annotator": "yc-real",
                 })
-    os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
-    with open(out_csv, "w", newline="", encoding="utf-8") as f:
-        w = csv.DictWriter(f, fieldnames=CSV_FIELDS)
-        w.writeheader()
-        for row in rows:
-            w.writerow(row)
+    _write_csv(rows, CSV_FIELDS, out_csv)
+    return rows
+
+
+def run_exp3(
+    client, out_csv: str, depths: Tuple[int, ...] = (3, 5, 7), n_runs: int = 3,
+    injection_stage: int = 1, modes: Optional[List[FailureMode]] = None,
+    policies: Tuple[str, ...] = POLICIES,
+) -> List[dict]:
+    """Cascade-by-depth (#7): fix an early injection, vary chain depth, measure how
+    far the failure propagates downstream. Same seed across depths shares the chain
+    prefix, so deeper runs differ only by how many downstream stages exist."""
+    modes = modes or list(FailureMode)
+    rows: List[dict] = []
+    for depth in depths:
+        if injection_stage >= depth - 1:  # need >=1 downstream stage to observe cascade
+            continue
+        for mode in modes:
+            for policy in policies:
+                for run in range(n_runs):
+                    r = measure_chain(client, depth, injection_stage, mode, policy, seed=run)
+                    inj = r["injection_stage"]
+                    rows.append({
+                        "policy": policy, "depth": depth, "failure_mode": mode.value,
+                        "run": run, "seed": run, **r,
+                        "scenario_id": f"depth{depth}__{mode.value}__inj{inj}__run{run:04d}",
+                        "annotator": "yc-real", "notes": "",
+                    })
+    _write_csv(rows, EXP3_CSV_FIELDS, out_csv)
     return rows
 
 
@@ -243,19 +283,34 @@ def _client():
 
 
 def main() -> None:
-    ap = argparse.ArgumentParser(description="Real-LLM Exp 2 measured run (arithmetic chain).")
-    ap.add_argument("--out", default="data/measured/exp2_real.csv")
-    ap.add_argument("--stages", type=int, default=4)
+    ap = argparse.ArgumentParser(description="Real-LLM Exp 2/3 measured run (arithmetic chain).")
+    ap.add_argument("--exp", type=int, choices=(2, 3), default=2)
+    ap.add_argument("--out", default=None, help="default: data/measured/exp{N}_real.csv")
+    ap.add_argument("--stages", type=int, default=4, help="Exp 2 chain length")
+    ap.add_argument("--depths", default="3,5,7", help="Exp 3 chain depths (comma-separated)")
     ap.add_argument("--runs", type=int, default=3)
     args = ap.parse_args()
-    rows = run_exp2(_client(), args.out, n_stages=args.stages, n_runs=args.runs)
+    client = _client()
     tag = "MOCK" if MOCK else f"real Claude ({DEFAULT_MODEL})"
-    print(f"[{tag}] wrote {len(rows)} rows -> {args.out}")
-    agg = defaultdict(list)
-    for r in rows:
-        agg[r["failure_mode"]].append(r["final_task_success"])
-    for mode, fs in sorted(agg.items()):
-        print(f"  {mode:24s} final_success_rate={sum(fs) / len(fs):.2f}  (n={len(fs)})")
+    if args.exp == 2:
+        out = args.out or "data/measured/exp2_real.csv"
+        rows = run_exp2(client, out, n_stages=args.stages, n_runs=args.runs)
+        print(f"[{tag}] Exp2: wrote {len(rows)} rows -> {out}")
+        agg = defaultdict(list)
+        for r in rows:
+            agg[r["failure_mode"]].append(r["final_task_success"])
+        for mode, fs in sorted(agg.items()):
+            print(f"  {mode:24s} final_success_rate={sum(fs) / len(fs):.2f}  (n={len(fs)})")
+    else:
+        out = args.out or "data/measured/exp3_real.csv"
+        depths = tuple(int(d) for d in args.depths.split(",") if d.strip())
+        rows = run_exp3(client, out, depths=depths, n_runs=args.runs)
+        print(f"[{tag}] Exp3: wrote {len(rows)} rows -> {out}")
+        agg = defaultdict(list)
+        for r in rows:
+            agg[(r["failure_mode"], r["depth"])].append(r["cascade_radius"])
+        for (mode, depth), cr in sorted(agg.items()):
+            print(f"  {mode:24s} depth={depth} cascade_radius_mean={sum(cr) / len(cr):.2f}  (n={len(cr)})")
 
 
 if __name__ == "__main__":
