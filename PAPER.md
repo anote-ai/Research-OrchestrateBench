@@ -3,10 +3,10 @@
 **Authors**: Yidian Chen, Yingzi Gu · **Supervisor**: Natan Vidra (Anote)
 **Target venues**: DAI 2026 Industry Track (8/3) · EMNLP ORACLE workshop (9/18) · AAAI 2027 (7/28)
 
-> **DRAFT v0.5 (2026-06-22, addresses issue #8).** Built from the approved design document (`DESIGN_DOC.md`).
-> **Honesty markers**: Experiments 1, 2, and 3 report *measured* results (Exp 1 routing; Exp 2 = real Claude
-> N=30 + a domain-grounded loan-approval re-run N=30; Exp 3 = real Claude N=90, cascade-by-depth). Experiment 4
-> is designed and scaffolded. Exp 2/3 (failure taxonomy / cascade) remain a **core contribution with Y. Gu
+> **DRAFT v0.6 (2026-06-22, addresses issue #8).** Built from the approved design document (`DESIGN_DOC.md`).
+> **Honesty markers**: All four experiments now report *measured* results (Exp 1 routing; Exp 2 = real Claude
+> N=30 + domain-grounded loan-approval re-run N=30; Exp 3 = real Claude N=90, cascade-by-depth; Exp 4 = real
+> Claude N=20, decomposition). Exp 2/3 (failure taxonomy / cascade) remain a **core contribution with Y. Gu
 > (issues #4/#7)**.
 
 ---
@@ -216,7 +216,7 @@ loan-approval pipeline (Intake Officer → Risk Analyst → Compliance Officer �
 prompted in business terms (`run_exp2 --domain`). **The core mechanism holds**: the latent/semantic modes
 (conflicting outputs, context pollution, premature action) still fail completely (final-task success
 **0.0**), and the tool fault stays more recoverable than the latent modes — the failure-mode *ordering* is
-robust across framings. Crucially, the **absolute rates shift with framing**: `ambiguous_delegation` rises to
+robust across framings (**Figure 2**). Crucially, the **absolute rates shift with framing**: `ambiguous_delegation` rises to
 **0.50** (the business-role context lets the agent infer the intended operation about half the time) and
 `tool_invocation_error` recovery falls to **0.67** (by-hand recomputation is noisier inside the richer
 business prompt). This framing-sensitivity is the signature of *real agent behavior*, not a structural
@@ -241,7 +241,7 @@ containment or final-task success on latent failures.
 **Real measured findings (Claude Sonnet 4.6, N=90, 2026-06-22).** `run_exp3` extends the Experiment 2
 real-agent design to variable depth — the same prompt-level injection and exact-match grading, looped over
 3-/5-/7-stage chains with the error injected at stage 1. Across the four latent/semantic failure modes, **mean
-cascade radius scales monotonically with depth: 1.0 [1.0, 1.0] (depth 3) → 2.9 [2.6, 3.0] (depth 5) → 5.0 [5.0, 5.0] (depth 7)** (bootstrap 95% CIs, latent modes pooled, n=24/depth) — the failure
+cascade radius scales monotonically with depth: 1.0 [1.0, 1.0] (depth 3) → 2.9 [2.6, 3.0] (depth 5) → 5.0 [5.0, 5.0] (depth 7)** (bootstrap 95% CIs, latent modes pooled, n=24/depth; **Figure 1**) — the failure
 propagates to essentially every downstream stage (depth − 2). `tool_invocation_error` stays at **cascade radius
 0 at every depth** (the agent recomputes by hand). The lone deviation is `ambiguous_delegation` at depth 5
 (mean 2.5 vs 3.0 for the other latent modes), where the real agent occasionally guesses the intended operation
@@ -251,13 +251,21 @@ result and the primary differentiator vs. MAS-FIRE, which reports no stages-trav
 offline-harness figures above are a large-N trend projection under a slightly different cascade convention;
 these real measured values supersede them as the primary result.)
 
-### 5.4 Experiment 4 — Decomposition quality *(designed; secondary priority)*
+### 5.4 Experiment 4 — Decomposition quality *(real Claude measured run, N=20; secondary)*
 
-For high-complexity tasks (`complexity_score > 0.7`) that trigger `DECOMPOSE`, compare the produced
-sub-task decomposition against expert-annotated gold decompositions. **Metrics**: delegation fidelity,
-decomposition granularity (too coarse vs. too fine), and wasted sub-agent calls. **Scale**: 50 complex
-tasks × 3 policies = **150 traces**. This is secondary to the Exp 2/3 reliability headline and runs
-after them.
+For composite tasks `(a op b) op (c op d)` with a canonical 3-step gold decomposition, we score the
+produced decomposition against gold — **delegation fidelity** (gold sub-results recovered), **granularity
+error**, **wasted sub-tasks** — comparing a `monolithic` (single-step) vs a `decompose` (planner) policy.
+
+**Real measured findings (Claude Sonnet 4.6, N=20, 2026-06-22).** The `decompose` policy produces a
+faithful three-step decomposition (**delegation fidelity 1.00, granularity error 0**), while `monolithic`
+reaches the correct final answer but exposes no delegable sub-structure (**fidelity 0.37, granularity error
+2**). Notably, `final_correct` is **1.0 for both** — the arithmetic is easy enough that both get the answer;
+the discriminator is the **decomposition structure**, not final correctness. For multi-agent orchestration
+this is exactly the point: a monolithic agent can be *right* yet produce nothing a planner can delegate,
+audit, or recover from — decomposition quality is about delegable structure, which a routing policy can
+measure and reward. Data: `data/measured/exp4_real.csv`. (Scale: 10 tasks × 2 policies = 20 traces; a larger
+suite with a 3-policy comparison and gold κ is future work.)
 
 ---
 
@@ -346,6 +354,11 @@ teams most need: latent failures that retry cannot repair, and a cascade radius 
 depth (1.0 → 2.9 → 5.0 across depths 3 / 5 / 7).
 
 ---
+
+## Figures
+
+- **Figure 1** (`figures/exp3_cascade_by_depth.png`): Exp 3 — mean cascade radius vs pipeline depth; latent/semantic modes scale 1.0 → 2.9 → 5.0 across depths 3/5/7 while `tool_invocation_error` stays at 0 (real Claude, N=90).
+- **Figure 2** (`figures/exp2_arith_vs_domain.png`): Exp 2 — failure-mode final-task success, arithmetic chain vs loan-approval workflow; the failure-mode *ordering* is robust across framings while absolute rates shift (real Claude, N=30 each).
 
 ## References *(working list; to be formatted to venue style)*
 
