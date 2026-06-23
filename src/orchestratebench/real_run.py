@@ -58,6 +58,13 @@ EXP3_CSV_FIELDS = [
     "escalated", "escalation_latency_ms", "annotator", "notes",
 ]
 
+# Exp 4 (decomposition quality, #19) uses its own metric columns — delegation fidelity etc.,
+# not the cascade/recovery schema of Exp 2/3.
+EXP4_CSV_FIELDS = [
+    "policy", "task_id", "run", "scenario_id", "final_correct", "delegation_fidelity",
+    "granularity_error", "wasted_subtasks", "produced_steps", "gold_steps", "annotator", "notes",
+]
+
 
 @dataclass
 class Stage:
@@ -272,6 +279,84 @@ def run_exp3(
     return rows
 
 
+def build_composite_task(seed: int) -> dict:
+    """A verifiable composite task `(a op1 b) op2 (c op3 d)` with a canonical 3-step gold
+    decomposition. Clean ground truth lets us score decomposition quality (Exp 4 / #19)."""
+    rng = random.Random(seed)
+    a, b, c, d = (rng.randint(2, 9) for _ in range(4))
+    op1, op2, op3 = (rng.choice(["+", "*", "-"]) for _ in range(3))
+    f = {"+": lambda x, y: x + y, "*": lambda x, y: x * y, "-": lambda x, y: x - y}
+    r1, r2 = f[op1](a, b), f[op3](c, d)
+    final = f[op2](r1, r2)
+    return {"expr": f"({a} {op1} {b}) {op2} ({c} {op3} {d})",
+            "gold_results": [r1, r2, final], "gold_final": final, "gold_steps": 3}
+
+
+def _decompose_prompt(task: dict, policy: str) -> str:
+    if policy == "monolithic":
+        return (f"Compute {task['expr']} in a single step. "
+                f"Output exactly one line: STEP: {task['expr']} = <integer>.")
+    return (f"You are a planner agent. Decompose this calculation into sequential sub-steps, one per "
+            f"line, in the exact format 'STEP: <expression> = <integer>'. Resolve inner parentheses "
+            f"first, then combine. Do not skip steps. Task: compute {task['expr']}.")
+
+
+def _parse_steps(text: str) -> List[int]:
+    """Integer results of each 'STEP: ... = N' line."""
+    return [int(m) for m in re.findall(r"STEP:.*?=\s*(-?\d+)", text)]
+
+
+def _mock_decompose(task: dict, policy: str) -> List[int]:
+    if policy == "monolithic":
+        return [task["gold_final"]]            # correct final, but one step (poor delegation)
+    return list(task["gold_results"])          # full, correct decomposition
+
+
+def score_decomposition(produced: List[int], task: dict) -> dict:
+    gold = task["gold_results"]
+    matched = sum(1 for g in gold if g in produced)
+    return {
+        "final_correct": bool(produced) and produced[-1] == task["gold_final"],
+        "delegation_fidelity": round(matched / len(gold), 3),
+        "granularity_error": abs(len(produced) - task["gold_steps"]),
+        "wasted_subtasks": max(0, len(produced) - matched),
+        "produced_steps": len(produced),
+        "gold_steps": task["gold_steps"],
+    }
+
+
+def measure_decomposition(client, seed: int, policy: str) -> dict:
+    task = build_composite_task(seed)
+    if MOCK or client is None:
+        produced = _mock_decompose(task, policy)
+    else:
+        resp = client.messages.create(
+            model=DEFAULT_MODEL, max_tokens=256,
+            messages=[{"role": "user", "content": _decompose_prompt(task, policy)}],
+        )
+        text = "".join(b.text for b in resp.content if getattr(b, "type", "") == "text")
+        produced = _parse_steps(text)
+    return score_decomposition(produced, task)
+
+
+def run_exp4(
+    client, out_csv: str, n_tasks: int = 10,
+    policies: Tuple[str, ...] = ("monolithic", "decompose"),
+) -> List[dict]:
+    """Decomposition quality (#19): score the produced sub-task decomposition against a
+    canonical gold for composite tasks, comparing a monolithic vs a decomposing policy."""
+    rows: List[dict] = []
+    for policy in policies:
+        for run in range(n_tasks):
+            r = measure_decomposition(client, seed=run, policy=policy)
+            rows.append({
+                "policy": policy, "task_id": run, "run": run, **r,
+                "scenario_id": f"decomp_{policy}_t{run:04d}", "annotator": "yc-real", "notes": "",
+            })
+    _write_csv(rows, EXP4_CSV_FIELDS, out_csv)
+    return rows
+
+
 def _client():
     if MOCK:
         return None
@@ -284,11 +369,12 @@ def _client():
 
 def main() -> None:
     ap = argparse.ArgumentParser(description="Real-LLM Exp 2/3 measured run (arithmetic chain).")
-    ap.add_argument("--exp", type=int, choices=(2, 3), default=2)
+    ap.add_argument("--exp", type=int, choices=(2, 3, 4), default=2)
     ap.add_argument("--out", default=None, help="default: data/measured/exp{N}_real.csv")
     ap.add_argument("--stages", type=int, default=4, help="Exp 2 chain length")
     ap.add_argument("--depths", default="3,5,7", help="Exp 3 chain depths (comma-separated)")
     ap.add_argument("--runs", type=int, default=3)
+    ap.add_argument("--tasks", type=int, default=10, help="Exp 4 number of composite tasks")
     args = ap.parse_args()
     client = _client()
     tag = "MOCK" if MOCK else f"real Claude ({DEFAULT_MODEL})"
@@ -301,7 +387,7 @@ def main() -> None:
             agg[r["failure_mode"]].append(r["final_task_success"])
         for mode, fs in sorted(agg.items()):
             print(f"  {mode:24s} final_success_rate={sum(fs) / len(fs):.2f}  (n={len(fs)})")
-    else:
+    elif args.exp == 3:
         out = args.out or "data/measured/exp3_real.csv"
         depths = tuple(int(d) for d in args.depths.split(",") if d.strip())
         rows = run_exp3(client, out, depths=depths, n_runs=args.runs)
@@ -311,6 +397,19 @@ def main() -> None:
             agg[(r["failure_mode"], r["depth"])].append(r["cascade_radius"])
         for (mode, depth), cr in sorted(agg.items()):
             print(f"  {mode:24s} depth={depth} cascade_radius_mean={sum(cr) / len(cr):.2f}  (n={len(cr)})")
+    else:  # exp 4 — decomposition quality
+        out = args.out or "data/measured/exp4_real.csv"
+        rows = run_exp4(client, out, n_tasks=args.tasks)
+        print(f"[{tag}] Exp4: wrote {len(rows)} rows -> {out}")
+        agg = defaultdict(lambda: defaultdict(list))
+        for r in rows:
+            agg[r["policy"]]["fid"].append(r["delegation_fidelity"])
+            agg[r["policy"]]["fin"].append(1 if r["final_correct"] else 0)
+            agg[r["policy"]]["gran"].append(r["granularity_error"])
+        for policy, m in sorted(agg.items()):
+            print(f"  {policy:12s} delegation_fidelity={sum(m['fid']) / len(m['fid']):.2f} "
+                  f"final_correct={sum(m['fin']) / len(m['fin']):.2f} "
+                  f"granularity_err={sum(m['gran']) / len(m['gran']):.2f}")
 
 
 if __name__ == "__main__":
