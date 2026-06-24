@@ -123,6 +123,23 @@ def compare_framings(arith: list[dict], domain: list[dict]) -> None:
     print("       magnitudes shift with framing = real agent behavior, not a tautology.")
 
 
+def analyze_policies(rows: list[dict], title: str, seed: int) -> None:
+    """Policy-conditioned containment on latent failures (Exp 2/3 with llm/oracle
+    columns; review R2). LLM policy semantics are an assumption -- see real_run.py."""
+    print(f"\n### {title} -- policy-conditioned containment (latent pooled, N={len(rows)})")
+    order = ["fixed", "heuristic", "retry(heuristic)", "llm", "oracle"]
+    rec: dict[str, list] = defaultdict(list)
+    cas: dict[str, list] = defaultdict(list)
+    for r in rows:
+        if r["failure_mode"] in LATENT_MODES:
+            rec[r["policy"]].append(_bool(r["final_task_success"]))
+            cas[r["policy"]].append(float(r["cascade_radius"]))
+    print(f"    {'policy':18s}  {'latent recovery [95% CI]':30s}  cascade radius [95% CI]")
+    for p in order:
+        if p in rec:
+            print(f"    {p:18s}  {_stat(rec[p], seed):30s}  {_stat(cas[p], seed)}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--data-dir", type=Path,
@@ -144,6 +161,10 @@ def main() -> None:
     compare_framings(exp2_arith, exp2_domain)
     analyze_exp3(_load(d / "exp3_real.csv"), args.seed)
     analyze_exp4(_load(d / "exp4_real.csv"), args.seed)
+    for fn, ptitle in (("exp2_policy_real.csv", "Exp 2"), ("exp3_policy_real.csv", "Exp 3")):
+        pf = d / fn
+        if pf.exists():
+            analyze_policies(_load(pf), ptitle, args.seed)
     print()
 
 

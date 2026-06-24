@@ -440,6 +440,38 @@ the \textbf{decomposition structure}, not final correctness. For multi-agent
 orchestration this is exactly the point: a monolithic agent can be \emph{right}
 yet produce nothing a planner can delegate, audit, or recover from.
 
+\subsection{Policy-conditioned containment (real Claude, $N{=}75 + N{=}225$; review R2)}
+Experiments 2--3 pool over baseline policies; we add \textbf{LLM-as-router} and \textbf{Oracle}
+policies to ask whether the routing policy itself governs containment. \textbf{The LLM-policy
+semantics are an explicit modelling assumption} --- at the injected stage the router is given the
+trusted upstream value and licensed to detect and correct the anomaly --- so the absolute LLM numbers
+are one reasonable instantiation, pending alignment with the routing model (\S\ref{sec:setup}) and the
+co-author pipeline (documented inline in \texttt{real\_run.py}).
+
+\begin{table}[t]
+\centering
+\caption{Policy-conditioned containment on latent failures (real Claude, $N{=}75$; 95\% bootstrap CI).}
+\label{tab:policy}
+\small
+\begin{tabular}{@{}lcc@{}}
+\toprule
+\textbf{Policy} & \textbf{Latent recovery} & \textbf{Cascade radius} \\
+\midrule
+fixed / heuristic / retry & 0.08 [0.00, 0.25] & 1.83 [1.50, 2.00] \\
+\textbf{LLM-as-router} & \textbf{0.83 [0.58, 1.00]} & \textbf{0.33 [0.00, 0.83]} \\
+Oracle (ceiling) & 1.00 [1.00, 1.00] & 0.00 [0.00, 0.00] \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\textbf{Cascade by depth ($N{=}225$) --- the headline policy result.} The policy effect
+\emph{amplifies with pipeline depth}: baseline cascade radius grows with depth
+(0.9 / 2.7 / 4.6 at depths 3 / 5 / 7), while the LLM router stays nearly flat (0.25 / 0.75 / 0.83) and
+Oracle fully contains (0 / 0 / 0). At depth 7 the LLM router cuts cascade radius
+\textbf{$\sim$5.5$\times$} versus the baselines --- intelligent routing's containment benefit is
+\emph{larger in deeper pipelines}, the policy-conditioned signature MAS-FIRE does not measure. Data:
+\texttt{data/measured/exp2\_policy\_real.csv} and \texttt{exp3\_policy\_real.csv}.
+
 \section{Discussion}
 Experiment 1 establishes the paper's first reproducible claim: routing reliability
 is a function of \emph{mechanism}. Experiments 2 and 3 deliver the reliability

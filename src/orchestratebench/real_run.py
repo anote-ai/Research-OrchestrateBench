@@ -252,6 +252,30 @@ def measure_chain(
                 prompt_r, _ = prompt_fn(s, upstream, m)  # same failure persists on retry
                 val, lat2 = _call_claude(client, prompt_r)
             lat += lat2
+        elif policy == "oracle" and val != s.gold:
+            # Oracle ceiling: perfect detection + repair to the gold value (no LLM call;
+            # a deterministic upper bound on cascade containment).
+            val, lat2 = s.gold, 0.0
+            lat += lat2
+        elif policy == "llm" and s.idx == injection_stage and val != s.gold:
+            # LLM-as-router re-attempt: a stronger pass is given the trusted upstream value and
+            # licensed to detect/correct the anomaly itself. SEMANTICS ASSUMPTION for the
+            # policy-conditioned cascade study (review R2) -- pending alignment with the paper's
+            # routing model and Y. Gu's measured_runs pipeline.
+            if use_mock:
+                # mock: the trusted-upstream hint clears upstream/tool faults, but an unspecified
+                # operation (ambiguous_delegation) can still be misread -> a mid-tier policy.
+                val = val if m == FailureMode.AMBIGUOUS_DELEGATION else s.gold
+                lat2 = 0.0
+            else:
+                hint = (prompt + f"\n\nNote: the trusted upstream result is {upstream}. If the "
+                        f"instruction above is ambiguous, contradictory, or inconsistent with this "
+                        f"trusted value, infer the intended arithmetic operation and compute it "
+                        f"correctly. Output exactly one line: RESULT=<integer>.")
+                v2, lat2 = _call_claude(client, hint)
+                if v2 is not None:
+                    val = v2
+            lat += lat2
         succeeded.append(val == s.gold)
         latencies.append(lat)
         upstream = val  # downstream builds on the (possibly wrong) CLAIMED value -> real cascade
@@ -431,12 +455,16 @@ def main() -> None:
     ap.add_argument("--runs", type=int, default=3)
     ap.add_argument("--tasks", type=int, default=10, help="Exp 4 number of composite tasks")
     ap.add_argument("--domain", action="store_true", help="domain-grounded loan-approval workflow (role agents) instead of bare arithmetic")
+    ap.add_argument("--policies", default=None,
+                    help="comma-separated routing policies; default = fixed,heuristic,retry(heuristic). "
+                         "Add llm,oracle for the policy-conditioned cascade study (Exp 2/3).")
     args = ap.parse_args()
     client = _client()
+    pols = tuple(p.strip() for p in args.policies.split(",")) if args.policies else POLICIES
     tag = "MOCK" if MOCK else f"real Claude ({DEFAULT_MODEL})"
     if args.exp == 2:
         out = args.out or ("data/measured/exp2_domain_real.csv" if args.domain else "data/measured/exp2_real.csv")
-        rows = run_exp2(client, out, n_stages=args.stages, n_runs=args.runs, domain=args.domain)
+        rows = run_exp2(client, out, n_stages=args.stages, n_runs=args.runs, domain=args.domain, policies=pols)
         print(f"[{tag}] Exp2: wrote {len(rows)} rows -> {out}")
         agg = defaultdict(list)
         for r in rows:
@@ -446,7 +474,7 @@ def main() -> None:
     elif args.exp == 3:
         out = args.out or ("data/measured/exp3_domain_real.csv" if args.domain else "data/measured/exp3_real.csv")
         depths = tuple(int(d) for d in args.depths.split(",") if d.strip())
-        rows = run_exp3(client, out, depths=depths, n_runs=args.runs, domain=args.domain)
+        rows = run_exp3(client, out, depths=depths, n_runs=args.runs, domain=args.domain, policies=pols)
         print(f"[{tag}] Exp3: wrote {len(rows)} rows -> {out}")
         agg = defaultdict(list)
         for r in rows:

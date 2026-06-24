@@ -269,6 +269,40 @@ audit, or recover from — decomposition quality is about delegable structure, w
 measure and reward. Data: `data/measured/exp4_real.csv`. (Scale: 10 tasks × 2 policies = 20 traces; a larger
 suite with a 3-policy comparison and gold κ is future work.)
 
+### 5.5 Policy-conditioned containment *(real Claude measured run, N=75 + N=225; addresses review R2)*
+
+Experiments 2–3 above pool over baseline policies; here we add **LLM-as-router** and **Oracle**
+policies to ask whether the routing policy itself governs failure containment — the policy-conditioned
+view review R2 requested. **The LLM-policy semantics are an explicit modelling assumption**: at the
+injected stage the router is given the trusted upstream value and licensed to detect and correct the
+anomaly. The absolute LLM numbers are therefore one reasonable instantiation, pending alignment with
+the routing model in §4 and the co-author measured-runs pipeline (`real_run.py` documents the
+assumption inline).
+
+**Failure recovery (Exp 2 framing, N=75).** On the four latent/semantic modes, baseline policies
+barely contain anything; the LLM router recovers most; Oracle is the ceiling.
+
+| Policy | Latent recovery [95% CI] | Cascade radius [95% CI] |
+|---|---|---|
+| fixed / heuristic / retry(heuristic) | 0.08 [0.00, 0.25] | 1.83 [1.50, 2.00] |
+| **LLM-as-router** | **0.83 [0.58, 1.00]** | **0.33 [0.00, 0.83]** |
+| Oracle (ceiling) | 1.00 [1.00, 1.00] | 0.00 [0.00, 0.00] |
+
+**Cascade by depth (Exp 3 framing, N=225) — the headline policy result.** The policy effect
+*amplifies with pipeline depth*: baseline cascade radius grows with depth, while the LLM router stays
+nearly flat and Oracle fully contains. At depth 7 the LLM router cuts cascade radius **~5.5×** versus
+the baselines — intelligent routing's containment benefit is *larger in deeper pipelines*, exactly the
+policy-conditioned signature MAS-FIRE does not measure.
+
+| Policy | depth 3 | depth 5 | depth 7 |
+|---|---|---|---|
+| baseline (fixed / heuristic / retry) | 0.92 | ~2.7 | 4.58 |
+| **LLM-as-router** | **0.25** | **0.75** | **0.83** |
+| Oracle | 0.00 | 0.00 | 0.00 |
+
+Data: `data/measured/exp2_policy_real.csv` + `exp3_policy_real.csv`; regenerate via
+`scripts/analyze_measured.py`.
+
 ---
 
 ## 6. Discussion
