@@ -30,22 +30,19 @@ data changes and keep the tables in sync.
 DAI 2026 has two tracks with different requirements:
 
 - **Research Track — 8 pages, double-blind.** Requires **anonymization**:
-  - remove `\author{}` / `\affiliation{}` blocks (or use acmart `anonymous`),
-  - drop the **acknowledgments** (Natan Vidra),
-  - remove the **"Product tie-in"** paragraph in §5.1 (names Anote's Panacea),
-  - scrub the `intentbench` note ("Anote Paper #2 / S. Haing"), repo URLs, and any
-    Anote-identifying text,
-  - then cut to **8 pages**.
-- **Industry Track — 6 pages, single-blind.** No anonymization needed; cut to
-  **6 pages** (the four experiments will need aggressive trimming — likely keep
-  Exp 1 + Exp 3 headline, compress Exp 2/4).
-
-To switch from draft to real submission: remove the `nonacm` class option and add
-the DAI 2026 `\acmConference{...}` metadata from the official template.
+  - ✅ **DONE**: `anonymous` class option set (acmart hides authors + acks at compile
+    time); product tie-in neutralized; `intentbench` ref anonymized; "with Y. Gu" removed.
+  - ⚠️ **Submit the compiled PDF only — it is anonymous.** Do NOT upload the `.tex`
+    source to OpenReview at review time; the source keeps `% CAMERA-READY` comments with
+    real names. Source goes up only at camera-ready.
+  - Remaining: cut to **8 pages** in Overleaf once you see the page count.
+- **Camera-ready restore** (after acceptance): remove `anonymous` from `\documentclass`
+  (restores authors + acks) and apply each `% CAMERA-READY` comment in `main.tex` +
+  `references.bib` (product name, intentbench authors). Also drop `nonacm` and add the
+  DAI 2026 `\acmConference{...}` metadata from the official template.
 
 ## Needs the author (not automated)
 - Register on **OpenReview** with an EDU/institution email; confirm the DAI 2026
   assignment and download the **exact** template (check year/version).
-- **Decide the track** (Research vs Industry) → triggers the trimming + (if
-  Research) anonymization above.
-- Upload `design doc` to the shared Google Drive (Spurthi's request).
+- ✅ Track = **Research** (chosen); anonymization done — submit the anonymous PDF.
+- ✅ Design doc uploaded to the shared Google Drive.

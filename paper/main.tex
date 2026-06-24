@@ -3,7 +3,7 @@
 %% `nonacm` keeps this a clean draft (no ACM conference/copyright block);
 %% remove `nonacm` and add the DAI \acmConference{} metadata for the real submission.
 %% Local machine has no LaTeX toolchain -> compile on Overleaf (see README.md).
-\documentclass[sigconf,nonacm]{acmart}
+\documentclass[sigconf,nonacm,anonymous]{acmart}  % anonymous = double-blind submission; remove `anonymous` for camera-ready (restores authors + acks)
 
 \usepackage{booktabs}
 \usepackage{graphicx}
@@ -282,12 +282,12 @@ The larger 1{,}800-trace workflow suite is where the LLM router is expected to
 drop below 100\% and yield a graded comparison (projected 85--95\% vs.\ heuristic
 65--75\%).
 
-\paragraph{Product tie-in.} The same keyword-routing weakness exists in Anote's
-Panacea (\texttt{multi\_agent\_system.py}); a flag-gated model-driven router was
+\paragraph{Product tie-in.} The same keyword-routing weakness exists in a production
+multi-agent system; a flag-gated model-driven router was  % CAMERA-READY: Anote's Panacea (multi\_agent\_system.py)
 added there as the opt-in remedy this experiment motivates.
 
 \subsection{Experiment 2 --- Failure Injection and Recovery (real Claude
-measured run; core, with Y. Gu)}
+measured run; core)}
 \textbf{Design.} Five MAST failure modes --- \emph{ambiguous delegation},
 \emph{tool-invocation error}, \emph{context pollution}, \emph{conflicting
 sub-agent outputs}, \emph{premature action} --- injected at the \textbf{prompt
@@ -358,7 +358,7 @@ while absolute rates shift (real Claude, $N{=}30$ each).}
 \end{figure}
 
 \subsection{Experiment 3 --- Cascade Propagation Depth (real Claude measured run,
-$N{=}90$; core, with Y. Gu)}
+$N{=}90$; core)}
 \textbf{Design.} Inject a single seeded error at stage 1 of variable-depth
 (3-, 5-, 7-stage) pipelines and measure how far it propagates. \textbf{Cascade
 radius} (downstream stages corrupted) is the primary differentiator vs.\
