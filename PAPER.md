@@ -74,7 +74,7 @@ choosing and hardening an orchestration framework on *reliability* rather than e
 | **MAST** — *Why Do Multi-Agent LLM Systems Fail?* (Cemri, Pan et al., **arXiv:2503.13657**; 14 failure modes in 3 categories, MAST-Data 1,600+ traces over 7 frameworks, κ=0.88) | Empirically-grounded *taxonomy* of **observed** MAS failures | We **inject** that taxonomy under seed-controlled conditions and measure recovery + cascade *per mode* — MAST observes, we intervene |
 | **MAS-FIRE** (**arXiv:2602.19843**) | Fault **injection** + reliability evaluation; intra-/inter-agent fault taxonomy via prompt / message-routing manipulation | **Closest prior work** (see §2.1). We differ on emphasis: cascade **radius across pipeline depths** + **routing-policy comparison** as the unit of analysis, not reliability scoring alone |
 | **TraceElephant** — *Seeing the Whole Elephant* (**arXiv:2604.22708**; 220 annotated traces) | Benchmark for *post-hoc failure attribution* in MAS | Attribution is observational; we add controlled seeding + cascade radius as **primary** metrics |
-| **Agents Failure Attribution** (ICML 2025 Spotlight; 184 tasks) | Post-hoc attribution to the responsible agent/step | Same: attribution is a means here, not the product |
+| **Agents Failure Attribution** (ICML 2025 Spotlight; Who&When, 127 MAS) | Post-hoc attribution to the responsible agent/step | Same: attribution is a means here, not the product |
 | **Orchestration-pattern benchmark** (**arXiv:2603.22651**; 10k SEC filings) | Compares sequential / parallel / hierarchical / reflexive architectures on a cost-accuracy Pareto (reflexive F1 0.943 @2.3×; hierarchical 0.921 @1.4×) | Architecture comparison on *accuracy/cost*; we evaluate *failure handling* and routing **mechanism** — complementary |
 | **AdaptOrch** (arXiv:2602.16873) | Task-adaptive orchestration *framework* (+12–23%) | A method; OrchestraBench is the benchmark that would evaluate it |
 | **"From Spark to Fire"** (arXiv:2603.04474) | Errors cascade exponentially in pipelines | We operationalize this into a measurable cascade-radius benchmark |
@@ -370,7 +370,7 @@ depth (1.0 → 2.9 → 5.0 across depths 3 / 5 / 7).
 1. Cemri, Pan, et al. **MAST: Why Do Multi-Agent LLM Systems Fail?** arXiv:2503.13657, 2025. (14 failure modes; 1,600+ traces; κ=0.88.)
 2. **MAS-FIRE: Fault Injection and Reliability Evaluation for Multi-Agent Systems.** arXiv:2602.19843, 2026. (Closest external work; axes = topology × fault-type × model.)
 3. **TraceElephant: Seeing the Whole Elephant — Post-hoc Failure Attribution.** arXiv:2604.22708, 2026. (220 annotated traces.)
-4. **Which Agent Causes Task Failures and When?** ICML 2025 Spotlight. (Post-hoc attribution; 184 tasks.)
+4. **Which Agent Causes Task Failures and When? On Automated Failure Attribution of LLM Multi-Agent Systems.** Zhang, Yin, et al. ICML 2025 Spotlight; arXiv:2505.00212. (Who&When dataset; 127 MAS.)
 5. **Orchestration-Pattern Benchmark** (sequential/parallel/hierarchical/reflexive). arXiv:2603.22651, 2026. (10k SEC filings; cost-accuracy Pareto.)
 6. **AdaptOrch: Task-Adaptive Orchestration.** arXiv:2602.16873, 2026. (Orchestration method; +12–23%.)
 7. **From Spark to Fire: Error Cascades in Agent Pipelines.** arXiv:2603.04474, 2026.

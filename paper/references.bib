@@ -1,89 +1,94 @@
 % ============================================================================
-% references.bib  --  OrchestraBench (DAI 2026 submission, full-content draft)
+% references.bib  --  OrchestraBench (DAI 2026 submission)
 %
-% PROVENANCE / VERIFY-BEFORE-SUBMIT:
-%   * arXiv IDs in the 2602.*, 2603.*, 2604.* range are early-2026 entries
-%     transcribed 1:1 from the draft's working reference list (PAPER.md). Each
-%     MUST be verified to resolve and to match the cited claim before submission;
-%     some may be placeholders.
-%   * Several entries lack full author lists / venue page numbers. Fill these in
-%     from the resolved arXiv/venue record before camera-ready. Fields needing
-%     attention are marked with a `note = {VERIFY: ...}`.
+% STATUS (2026-06-23): all 11 cited works verified to exist on arXiv / in
+% proceedings via web search; titles, arXiv IDs, and (where found) author lists
+% filled in from the resolved records. Remaining VERIFY notes mark only the
+% author lists that the search did not surface, plus the internal Anote paper.
 % ============================================================================
 
 @misc{mast,
-  title         = {{MAST}: Why Do Multi-Agent {LLM} Systems Fail?},
-  author        = {Cemri and Pan and others},
+  title         = {Why Do Multi-Agent {LLM} Systems Fail?},
+  author        = {Cemri, Mert and Pan, Melissa Z. and Yang, Shuyi and others},
   year          = {2025},
   eprint        = {2503.13657},
   archivePrefix = {arXiv},
-  note          = {14 failure modes; 1,600+ traces; Cohen's kappa = 0.88.
-                   VERIFY: full author list.}
+  primaryClass  = {cs.AI},
+  note          = {Introduces the MAST taxonomy: 14 failure modes in 3 categories;
+                   MAST-Data 1,600+ traces over 7 frameworks; Cohen's kappa = 0.88}
 }
 
 @misc{masfire,
   title         = {{MAS-FIRE}: Fault Injection and Reliability Evaluation for
-                   Multi-Agent Systems},
+                   {LLM}-Based Multi-Agent Systems},
+  author        = {Jia, Jin and Deng, Zhiling and Chen, Zhuangbin and Wang, Yingqi
+                   and Zheng, Zibin},
   year          = {2026},
   eprint        = {2602.19843},
   archivePrefix = {arXiv},
-  note          = {Closest external work; axes = topology x fault-type x model.
-                   VERIFY: arXiv ID and author list.}
+  note          = {15 fault types (8 intra-/7 inter-agent); injection via prompt /
+                   response / message-routing; tested on MetaGPT, Table-Critic, CAMEL}
 }
 
 @misc{traceelephant,
-  title         = {{TraceElephant}: Seeing the Whole Elephant -- Post-hoc Failure
-                   Attribution in Multi-Agent Systems},
+  title         = {Seeing the Whole Elephant: A Benchmark for Failure Attribution
+                   in {LLM}-based Multi-Agent Systems},
   year          = {2026},
   eprint        = {2604.22708},
   archivePrefix = {arXiv},
-  note          = {220 annotated traces. VERIFY: arXiv ID and author list.}
+  note          = {220 annotated failure traces; full-execution-observability
+                   attribution. VERIFY: author list}
 }
 
 @inproceedings{attribution,
-  title     = {Which Agent Causes Task Failures and When? Post-hoc Attribution in
-               Multi-Agent Systems},
-  booktitle = {Proceedings of the International Conference on Machine Learning
+  title     = {Which Agent Causes Task Failures and When? On Automated Failure
+               Attribution of {LLM} Multi-Agent Systems},
+  author    = {Zhang, Shaokun and Yin, Ming and Zhang, Jieyu and others},
+  booktitle = {Proceedings of the 42nd International Conference on Machine Learning
                (ICML), Spotlight},
   year      = {2025},
-  note      = {184 tasks. VERIFY: full title, author list, pages.}
+  note      = {Who\&When dataset: failure logs from 127 multi-agent systems.
+               arXiv:2505.00212}
 }
 
 @misc{orchpattern,
-  title         = {An Orchestration-Pattern Benchmark for Multi-Agent Systems
-                   (Sequential / Parallel / Hierarchical / Reflexive)},
+  title         = {Benchmarking Multi-Agent {LLM} Architectures for Financial
+                   Document Processing: A Comparative Study of Orchestration
+                   Patterns, Cost-Accuracy Tradeoffs and Production Scaling
+                   Strategies},
+  author        = {Kulkarni, Siddhant and Kulkarni, Yukta},
   year          = {2026},
   eprint        = {2603.22651},
   archivePrefix = {arXiv},
-  note          = {10k SEC filings; cost-accuracy Pareto. VERIFY: arXiv ID, title,
-                   authors.}
+  note          = {10k SEC filings; reflexive F1 0.943 @2.3x, hierarchical 0.921 @1.4x}
 }
 
 @misc{adaptorch,
-  title         = {{AdaptOrch}: Task-Adaptive Orchestration for Multi-Agent
-                   Systems},
+  title         = {{AdaptOrch}: Task-Adaptive Multi-Agent Orchestration in the Era
+                   of {LLM} Performance Convergence},
   year          = {2026},
   eprint        = {2602.16873},
   archivePrefix = {arXiv},
-  note          = {Reports +12--23\%. VERIFY: arXiv ID and author list.}
+  note          = {Task-adaptive orchestration method (+12--23\%). VERIFY: author list}
 }
 
 @misc{sparkfire,
-  title         = {From Spark to Fire: Error Cascades in Agent Pipelines},
+  title         = {From Spark to Fire: Modeling and Mitigating Error Cascades in
+                   {LLM}-Based Multi-Agent Collaboration},
   year          = {2026},
   eprint        = {2603.04474},
   archivePrefix = {arXiv},
-  note          = {VERIFY: arXiv ID and author list.}
+  note          = {Error cascades in agent pipelines. VERIFY: author list}
 }
 
 @misc{beyondstrongest,
-  title         = {Beyond the Strongest: Orchestration vs.\ the Best-Agent
-                   Ceiling},
+  title         = {Beyond the Strongest {LLM}: Multi-Turn Multi-Agent Orchestration
+                   vs.\ Single {LLM}s on Benchmarks},
   year          = {2025},
   eprint        = {2509.23537},
   archivePrefix = {arXiv},
-  note          = {GPQA-Diamond: 95.5\% any-agent vs.\ 87.4\% orchestrated.
-                   VERIFY: arXiv ID and author list.}
+  note          = {GPQA-Diamond: at least one agent correct in 95.5\% of cases vs.\
+                   87.4\% orchestrated. VERIFY: author list}
 }
 
 @misc{doctorrag,
@@ -92,35 +97,40 @@
   eprint        = {2604.00865},
   archivePrefix = {arXiv},
   note          = {Not cited in current draft; kept for completeness.
-                   VERIFY: arXiv ID and author list.}
+                   VERIFY: arXiv ID and author list}
 }
 
 @misc{intentbench,
-  title  = {{IntentBench}: Intent Specification as a First-Class Evaluation
-            Object},
+  title  = {{IntentBench}: Intent Specification as a First-Class Evaluation Object},
   author = {Haing, Susana and others},
   year   = {2026},
   note   = {Anote Paper \#2 (S. Haing / Spurthi). Complementary spec-layer
-            benchmark; cross-cite. VERIFY: final title, authors, venue/URL.}
+            benchmark; cross-cite. VERIFY: final title, authors, venue/URL (internal)}
 }
 
 @inproceedings{agentbench,
   title     = {{AgentBench}: Evaluating {LLM}s as Agents},
+  author    = {Liu, Xiao and Yu, Hao and Zhang, Hanchen and Xu, Yifan and others},
   booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2024},
-  note      = {Final-task-success agent benchmark. VERIFY: authors, arXiv:2308.03688.}
+  note      = {arXiv:2308.03688; 8 environments, 27 LLMs}
 }
 
 @inproceedings{swebench,
-  title     = {{SWE-bench}: Can Language Models Resolve Real-World {GitHub}
-               Issues?},
+  title     = {{SWE-bench}: Can Language Models Resolve Real-World {GitHub} Issues?},
+  author    = {Jimenez, Carlos E. and Yang, John and Wettig, Alexander and Yao,
+               Shunyu and Pei, Kexin and Press, Ofir and Narasimhan, Karthik},
   booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2024},
-  note      = {Final-task-success agent benchmark. VERIFY: authors, arXiv:2310.06770.}
+  note      = {arXiv:2310.06770; 2,294 real GitHub issues over 12 Python repos}
 }
 
 @misc{odysseybench,
-  title = {{OdysseyBench}: A Long-Horizon Agent Benchmark},
-  year  = {2025},
-  note  = {Final-task-success agent benchmark. VERIFY: authors, year, arXiv ID.}
+  title         = {{OdysseyBench}: Evaluating {LLM} Agents on Long-Horizon Complex
+                   Office Application Workflows},
+  year          = {2025},
+  eprint        = {2508.09124},
+  archivePrefix = {arXiv},
+  note          = {602 long-horizon office tasks (300 real + 302 synthesized).
+                   VERIFY: author list}
 }
