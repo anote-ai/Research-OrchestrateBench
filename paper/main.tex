@@ -54,7 +54,10 @@ fully recovered (\textbf{1.0}), and \textbf{retry does not repair the latent
 modes} --- it extends a corrupted trace rather than containing it; and cascade
 radius \textbf{scales monotonically with pipeline depth} (mean 1.0 / 2.9 / 5.0
 at depths 3 / 5 / 7) --- the stages-traversed signature MAS-FIRE leaves
-unquantified. We frame these as mechanism probes on a controlled chain, not
+unquantified. Adding \textbf{LLM-as-router} and \textbf{Oracle} routing policies, we further show
+cascade containment is \textbf{policy-conditioned}: an LLM router that re-derives from trusted state
+cuts latent cascade radius $\sim$5.5$\times$ over rule-based baselines at depth 7, the benefit widening
+as pipelines deepen. We frame these as mechanism probes on a controlled chain, not
 domain-workload claims (\S\ref{sec:limitations}).
 \end{abstract}
 
@@ -242,6 +245,7 @@ All comparisons report 95\% bootstrap CIs and paired bootstrap significance
 ($\alpha = 0.05$) via the statistics module.
 
 \section{Results}
+\label{sec:results}
 \subsection{Experiment 1 --- Routing Policy Comparison (measured)}
 We isolate the routing-mechanism question on a focused diagnostic of
 \textbf{26 expert-labelled gold cases} covering all four routing decisions: 16
@@ -469,8 +473,17 @@ Oracle (ceiling) & 1.00 [1.00, 1.00] & 0.00 [0.00, 0.00] \\
 (0.9 / 2.7 / 4.6 at depths 3 / 5 / 7), while the LLM router stays nearly flat (0.25 / 0.75 / 0.83) and
 Oracle fully contains (0 / 0 / 0). At depth 7 the LLM router cuts cascade radius
 \textbf{$\sim$5.5$\times$} versus the baselines --- intelligent routing's containment benefit is
-\emph{larger in deeper pipelines}, the policy-conditioned signature MAS-FIRE does not measure. Data:
+\emph{larger in deeper pipelines}, the policy-conditioned signature MAS-FIRE does not measure (Figure~\ref{fig:policy}). Data:
 \texttt{data/measured/exp2\_policy\_real.csv} and \texttt{exp3\_policy\_real.csv}.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{exp3_policy_cascade.png}
+\caption{Experiment 3 --- mean latent cascade radius vs.\ pipeline depth per routing policy; baseline
+grows with depth while LLM-as-router stays nearly flat and Oracle fully contains (real Claude,
+$N{=}225$).}
+\label{fig:policy}
+\end{figure}
 
 \section{Discussion}
 Experiment 1 establishes the paper's first reproducible claim: routing reliability
@@ -511,6 +524,11 @@ chain (\S\ref{sec:limitations}); domain-workflow validation is the next step.
   Claude agent over a staged chain with prompt-level fault injection ---
   simulating orchestration failure modes rather than wiring $N$ independent
   agents; a real multi-agent harness is future work.
+  \item \textbf{LLM-policy semantics are a modelling assumption.} The policy-conditioned results
+  (\S\ref{sec:results}, policy comparison) define the LLM router as a stronger pass given the trusted
+  upstream value and licensed to self-correct; the absolute LLM numbers depend on this choice. The
+  Oracle (gold-repair ceiling) and baseline columns are unambiguous, but the LLM column is one
+  reasonable instantiation pending alignment with the routing model and the co-author pipeline.
 \end{itemize}
 
 \section{Ethics and Broader Impact}

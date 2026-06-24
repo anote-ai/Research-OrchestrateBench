@@ -32,7 +32,10 @@ reports: across five MAST failure modes, the four latent/semantic modes fail com
 **0.0**) while a tool fault is fully recovered (**1.0**), and **retry does not repair the latent modes** — it
 extends a corrupted trace rather than containing it; and cascade radius **scales monotonically with pipeline
 depth** (mean 1.0 / 2.9 / 5.0 at depths 3 / 5 / 7) — the stages-traversed signature MAS-FIRE leaves
-unquantified. We frame these as mechanism probes on a controlled chain, not domain-workload claims (§7).
+unquantified. Adding **LLM-as-router** and **Oracle** routing policies, we further show cascade containment is
+**policy-conditioned**: an LLM router that re-derives from trusted state cuts latent cascade radius
+~5.5× over rule-based baselines at depth 7, the benefit widening as pipelines deepen. We frame these
+as mechanism probes on a controlled chain, not domain-workload claims (§7).
 
 ---
 
@@ -292,7 +295,7 @@ barely contain anything; the LLM router recovers most; Oracle is the ceiling.
 *amplifies with pipeline depth*: baseline cascade radius grows with depth, while the LLM router stays
 nearly flat and Oracle fully contains. At depth 7 the LLM router cuts cascade radius **~5.5×** versus
 the baselines — intelligent routing's containment benefit is *larger in deeper pipelines*, exactly the
-policy-conditioned signature MAS-FIRE does not measure.
+policy-conditioned signature MAS-FIRE does not measure (**Figure 3**).
 
 | Policy | depth 3 | depth 5 | depth 7 |
 |---|---|---|---|
@@ -337,6 +340,11 @@ a controlled chain (§7); domain-workflow validation is the next step.
 - **Single LLM, not a literal multi-agent system.** Exp 2/3 execute one Claude agent over a staged chain
   with prompt-level fault injection — simulating orchestration failure modes rather than wiring N
   independent agents; a real multi-agent harness is future work.
+- **LLM-policy semantics are a modelling assumption.** The policy-conditioned results (§5.5) define the
+  LLM router as a stronger pass given the trusted upstream value and licensed to self-correct; the
+  absolute LLM numbers depend on this choice. The Oracle (gold-repair ceiling) and baseline columns are
+  unambiguous, but the LLM column is one reasonable instantiation pending alignment with the routing
+  model (§4) and the co-author pipeline.
 
 ---
 
@@ -398,6 +406,7 @@ depth (1.0 → 2.9 → 5.0 across depths 3 / 5 / 7).
 
 - **Figure 1** (`figures/exp3_cascade_by_depth.png`): Exp 3 — mean cascade radius vs pipeline depth; latent/semantic modes scale 1.0 → 2.9 → 5.0 across depths 3/5/7 while `tool_invocation_error` stays at 0 (real Claude, N=90).
 - **Figure 2** (`figures/exp2_arith_vs_domain.png`): Exp 2 — failure-mode final-task success, arithmetic chain vs loan-approval workflow; the failure-mode *ordering* is robust across framings while absolute rates shift (real Claude, N=30 each).
+- **Figure 3** (`figures/exp3_policy_cascade.png`): Exp 3 — mean latent cascade radius vs pipeline depth per routing policy; baseline grows with depth while LLM-as-router stays nearly flat and Oracle fully contains (real Claude, N=225).
 
 ## References *(working list; to be formatted to venue style)*
 
