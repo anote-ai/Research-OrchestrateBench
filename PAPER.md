@@ -259,8 +259,10 @@ error**, **wasted sub-tasks** — comparing a `monolithic` (single-step) vs a `d
 
 **Real measured findings (Claude Sonnet 4.6, N=20, 2026-06-22).** The `decompose` policy produces a
 faithful three-step decomposition (**delegation fidelity 1.00, granularity error 0**), while `monolithic`
-reaches the correct final answer but exposes no delegable sub-structure (**fidelity 0.37, granularity error
-2**). Notably, `final_correct` is **1.0 for both** — the arithmetic is easy enough that both get the answer;
+reaches the correct final answer but exposes no delegable sub-structure (**fidelity 0.37 [0.33, 0.43],
+granularity error 2**). This fidelity gap is large and statistically significant under a paired bootstrap
+over the 10 shared tasks: **+0.63, 95% CI [0.57, 0.67], p < 0.0001** (decompose vs. monolithic), and the
+granularity-error gap is likewise **−2.0, p < 0.0001**. Notably, `final_correct` is **1.0 for both** — the arithmetic is easy enough that both get the answer;
 the discriminator is the **decomposition structure**, not final correctness. For multi-agent orchestration
 this is exactly the point: a monolithic agent can be *right* yet produce nothing a planner can delegate,
 audit, or recover from — decomposition quality is about delegable structure, which a routing policy can
@@ -343,6 +345,9 @@ Every reported number is regenerable from a fixed seed. Artifact-release checkli
   is negligible — a strength for an artifact-release benchmark.
 - [x] **One-command repro** — `python scripts/reproduce_exp1.py` regenerates the §5.1 table from the
   committed gold set (offline baselines need no key; LLM row runs when `ANTHROPIC_API_KEY` is set).
+- [x] **Measured-stats regeneration (Exp 2/3/4)** — `python scripts/analyze_measured.py` recomputes every
+  number in §5.2–§5.4 (per-mode recovery, cascade radius by depth, decomposition fidelity) with bootstrap
+  95% CIs and the paired significance tests, directly from the committed CSVs (offline, no key).
 
 ## 10. Conclusion
 
