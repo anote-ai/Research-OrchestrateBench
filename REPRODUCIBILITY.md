@@ -11,6 +11,7 @@ OrchestrateBench currently contains three different evidence types:
 | Evidence type | Status | Where it lives | Can it be cited as final paper evidence? |
 |---|---|---|---|
 | Experiment 1 measured routing diagnostic | Available now | `scripts/reproduce_exp1.py` | Yes, with the usual model/version caveats |
+| Experiment 2/3/4 real Claude measured runs | Available now | `data/measured/*_real.csv` + `scripts/analyze_measured.py` | Yes — real measured agent results (Sonnet 4.6; controlled-probe scope, §7) |
 | Experiment 2/3 auto-harness mechanism results | Available now | `scripts/run_exp23_pipeline.py` | Yes for mechanism validation; no as the final external measured result |
 | Experiment 2/3 collaborative external measured results | Planned / optional | `--input-file` path supplied by the user | Yes, once those records are collected and validated |
 
@@ -87,6 +88,17 @@ python3 scripts/run_exp3.py --input-file path/to/exp3_measured.jsonl --with-ci
 ```
 
 For this path, see also [data/measured/README.md](data/measured/README.md).
+
+### 5. Measured-experiment statistics (Exp 2/3/4)
+
+The real Claude measured runs are already committed under `data/measured/` (`exp2_real.csv`,
+`exp2_domain_real.csv`, `exp3_real.csv`, `exp4_real.csv`). To regenerate every number cited in
+PAPER.md §5.2–§5.4 — per-mode recovery, cascade radius by depth, decomposition fidelity — with
+bootstrap 95% CIs and paired significance tests, directly from those CSVs (offline, no key):
+
+```bash
+python3 scripts/analyze_measured.py
+```
 
 ## Artifact Semantics
 
