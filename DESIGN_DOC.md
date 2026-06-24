@@ -182,7 +182,9 @@ difficulty. The larger 1,800-trace workflow suite is where the LLM router is exp
 100% and yield a graded comparison. Results were stable across 3 passes (78/78); the prompt did not
 include gold labels.
 
-### Experiment 2 — Failure injection and recovery *(auto-harness results in repo; collaborative measured run pending — core, with Y. Gu / #4)*
+### Experiment 2 — Failure injection and recovery *(real Claude measured run done, N=30 + domain N=30; offline harness = large-N projection — core, with Y. Gu / #4)*
+
+> **Real measured findings (Claude Sonnet 4.6, N=30).** A real Claude agent runs a verifiable arithmetic dependency chain with prompt-level injection and exact-match grading (`real_run.py`): `tool_invocation_error` fully recovers (recovery 1.0, cascade 0); the four latent/semantic modes all fail (final-task success 0.0, cascade radius 2/2); `retry(heuristic)` does **not** recover them. A domain-grounded loan-approval re-run (N=30) shows the failure-mode *ordering* is robust across framings while absolute rates shift (`ambiguous_delegation` 0→0.5, `tool` 1→0.67). Data: `data/measured/exp2_real.csv` + `exp2_domain_real.csv`; regenerate via `scripts/analyze_measured.py`. The offline auto-harness notes below are retained as a large-N projection / mechanism check.
 
 - **Setup**: Using the MAST failure taxonomy, inject controlled failures at specific pipeline stages.
   Start with five high-frequency modes: ambiguous delegation, tool invocation error, context
@@ -215,7 +217,9 @@ include gold labels.
   `artifacts/exp23_pipeline/analysis/exp2/paper_tables.tex`, and
   `artifacts/exp23_pipeline/pipeline_manifest.json`.
 
-### Experiment 3 — Cascade propagation depth *(auto-harness results in repo; collaborative measured run pending — core, with Y. Gu / #7)*
+### Experiment 3 — Cascade propagation depth *(real Claude measured run done, N=90; offline harness = large-N projection — core, with Y. Gu / #7)*
+
+> **Real measured findings (Claude Sonnet 4.6, N=90).** `run_exp3` extends the real-agent design to variable depth (single injection at stage 1; depths 3/5/7). Mean cascade radius scales monotonically with depth — **1.0 [1.0, 1.0] / 2.88 [2.63, 3.0] / 5.0 [5.0, 5.0]** (latent modes pooled, bootstrap 95% CI); `tool_invocation_error` stays at 0 at every depth. This is the headline cascade-depth result and the primary differentiator vs. MAS-FIRE. Data: `data/measured/exp3_real.csv`; regenerate via `scripts/analyze_measured.py`.
 
 - **Setup**: Inject a single seeded error at stage 1, 2, or 3 of multi-stage workflows and measure how
   many downstream stages are corrupted. The analyzer consumes exactly one `failure_mode` per file;
@@ -250,7 +254,9 @@ include gold labels.
   `artifacts/exp23_pipeline/analysis/exp3/tool_invocation_error/paper_summary.md`, and
   `artifacts/exp23_pipeline/pipeline_manifest.json`.
 
-### Experiment 4 — Decomposition quality
+### Experiment 4 — Decomposition quality *(real Claude measured run done, N=20)*
+
+> **Real measured findings (Claude Sonnet 4.6, N=20).** For composite tasks `(a op b) op (c op d)` with a canonical 3-step gold, the `decompose` policy reaches delegation fidelity **1.00** / granularity error **0**, vs `monolithic` **0.37 [0.33, 0.43]** / **2**; paired bootstrap over the 10 shared tasks gives fidelity **+0.63 [0.57, 0.67], p<0.0001**. `final_correct` is 1.0 for both — the discriminator is decomposition structure, not the final answer. Data: `data/measured/exp4_real.csv`; regenerate via `scripts/analyze_measured.py`.
 
 - **Setup**: For high-complexity tasks (`complexity_score > 0.7`) that trigger `DECOMPOSE`, compare
   the sub-task decomposition against expert-annotated gold decompositions.
@@ -307,17 +313,19 @@ detection, because retry can repeat a corrupted state.
    Sonnet 4.6) at 100% overall, including 100% adversarial**. On this focused diagnostic the LLM
    matches Oracle; the broader workflow suite is expected to produce a graded comparison
    (projected LLM 85–95% vs. HeuristicPolicy 65–75%).
-2. **Failure recovery** *(current in-repo auto-harness result; collaborative measured run still
-   pending)*: recovery is indeed much higher for `tool_invocation_error` than for context pollution
-   or conflicting/semantic failures. In the current harness, `retry(heuristic)` reaches **1.0
-   recovery** and **1.0 final-task success** on `tool_invocation_error`, while all three policies
-   remain at **0 recovery / 0 final success** on `ambiguous_delegation`, `context_pollution`,
-   `conflicting_outputs`, and `premature_action`.
-3. **Cascade propagation** *(current in-repo auto-harness result; collaborative measured run still
-   pending)*: earlier-stage failures do have larger cascade radius than later-stage failures, and
-   deeper pipelines amplify the effect. Retry only reduces final failure rate when the failure is
-   retryable and locally detectable (`tool_invocation_error`); it does not contain propagation for
-   latent context corruption.
+2. **Failure recovery** *(real Claude measured run, N=30 + domain N=30)*: recovery is much higher
+   for `tool_invocation_error` than for latent/semantic failures. With a real Claude agent,
+   `tool_invocation_error` is fully recovered (**1.0 recovery / 1.0 final-task success, cascade 0**),
+   while `ambiguous_delegation`, `context_pollution`, `conflicting_outputs`, and `premature_action`
+   stay at **0 final success / cascade 2** and `retry(heuristic)` does not repair them. A
+   domain-grounded loan-approval re-run confirms the ordering is robust across framings while
+   absolute rates shift (`ambiguous` 0→0.5, `tool` 1→0.67).
+3. **Cascade propagation** *(real Claude measured run, N=90)*: cascade radius scales monotonically
+   with pipeline depth — **1.0 / 2.88 / 5.0** at depths 3 / 5 / 7 (latent modes pooled, 95% bootstrap
+   CI), i.e. the failure reaches ~(depth − 2) downstream stages, while `tool_invocation_error` stays
+   at **0** at every depth. Retry only reduces final failure rate when the failure is retryable and
+   locally detectable (`tool_invocation_error`); it does not contain propagation for latent context
+   corruption.
 4. **Cost-quality Pareto** *(planned)*: simple tasks may favor Fixed/Heuristic due to cost, while
    complex or adversarial tasks should justify model routing.
 5. **Statistical confidence**: all comparisons report 95% bootstrap CIs and paired bootstrap

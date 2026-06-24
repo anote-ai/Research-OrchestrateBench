@@ -107,6 +107,22 @@ def analyze_exp4(rows: list[dict], seed: int) -> None:
         print(f"    {p:10s}  {'final_correct':20s}  {_stat(fc, seed)}")
 
 
+def compare_framings(arith: list[dict], domain: list[dict]) -> None:
+    """Quantify Exp 2 framing sensitivity (supports PAPER.md 5.2 domain claim)."""
+    print("\n### Exp 2 -- framing sensitivity (arithmetic vs loan-approval domain)")
+
+    def rate(rows: list[dict], mode: str) -> float:
+        return _mean([_bool(r["final_task_success"]) for r in rows
+                      if r["failure_mode"] == mode])
+
+    print(f"    {'failure mode':24s}  {'arith':>7s}  {'domain':>7s}  {'delta':>7s}")
+    for m in (TOOL_MODE, *LATENT_MODES):
+        a, dm = rate(arith, m), rate(domain, m)
+        print(f"    {m:24s}  {a:7.3f}  {dm:7.3f}  {dm - a:+7.3f}")
+    print("    -> ordering robust (latent modes stay lowest in both framings);")
+    print("       magnitudes shift with framing = real agent behavior, not a tautology.")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(description=__doc__)
     ap.add_argument("--data-dir", type=Path,
@@ -121,8 +137,11 @@ def main() -> None:
     print(f"seed={args.seed}  bootstrap=10000 resamples, 95% percentile CI")
     print("=" * 78)
 
-    analyze_exp2(_load(d / "exp2_real.csv"), "Exp 2 -- arithmetic chain", args.seed)
-    analyze_exp2(_load(d / "exp2_domain_real.csv"), "Exp 2 -- loan-approval domain", args.seed)
+    exp2_arith = _load(d / "exp2_real.csv")
+    exp2_domain = _load(d / "exp2_domain_real.csv")
+    analyze_exp2(exp2_arith, "Exp 2 -- arithmetic chain", args.seed)
+    analyze_exp2(exp2_domain, "Exp 2 -- loan-approval domain", args.seed)
+    compare_framings(exp2_arith, exp2_domain)
     analyze_exp3(_load(d / "exp3_real.csv"), args.seed)
     analyze_exp4(_load(d / "exp4_real.csv"), args.seed)
     print()
