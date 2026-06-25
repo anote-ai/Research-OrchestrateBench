@@ -276,6 +276,26 @@ def measure_chain(
                 if v2 is not None:
                     val = v2
             lat += lat2
+        elif policy == "llm_noupstream" and s.idx == injection_stage and val != s.gold:
+            # ABLATION (review R2 CRITICAL): the SAME LLM re-attempt but WITHOUT being handed the
+            # trusted upstream value -- isolates whether the `llm` policy's recovery is the model
+            # detecting the fault itself vs. just being fed the correct upstream. Still beats
+            # baseline => policy-conditioned result holds; collapses to baseline => the `llm` gain
+            # was the upstream crutch (the confound the reviewer flagged).
+            if use_mock:
+                # mock: without the upstream crutch, only the overtly-flagged tool fault is
+                # self-correctable; latent/semantic modes stay failed (~baseline).
+                val = s.gold if m == FailureMode.TOOL_INVOCATION_ERROR else val
+                lat2 = 0.0
+            else:
+                hint = (prompt + " Re-examine the result above: if the instruction looks "
+                        "corrupted, ambiguous, or internally inconsistent, work out the intended "
+                        "arithmetic operation and recompute it correctly. Output exactly one line: "
+                        "RESULT=<integer>.")
+                v2, lat2 = _call_claude(client, hint)
+                if v2 is not None:
+                    val = v2
+            lat += lat2
         succeeded.append(val == s.gold)
         latencies.append(lat)
         upstream = val  # downstream builds on the (possibly wrong) CLAIMED value -> real cascade
