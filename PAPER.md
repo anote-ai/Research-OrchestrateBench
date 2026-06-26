@@ -356,9 +356,10 @@ a controlled chain (§7); domain-workflow validation is the next step.
   absolute LLM numbers depend on this choice. The Oracle (gold-repair ceiling) and baseline columns are
   unambiguous, but the LLM column is one reasonable instantiation pending alignment with the routing
   model (§4) and the co-author pipeline. To isolate whether the LLM gain reflects the model detecting
-  the fault versus being handed the trusted upstream, the harness ships an **ablation policy
-  (`llm_noupstream`)** that drops the trusted-upstream hint — running it (a real-key run) is the
-  immediate next step, and directly answers the reviewer's confound concern.
+  the fault versus being handed the trusted upstream, we ran an **ablation policy
+  (`llm_noupstream`)** that drops the trusted-upstream hint: latent recovery collapses to
+  near-baseline (§5.5), confirming the LLM column is a trusted-state probe, not autonomous
+  detection — directly answering the reviewer's confound concern.
 
 ---
 
