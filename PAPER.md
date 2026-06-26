@@ -34,7 +34,8 @@ extends a corrupted trace rather than containing it; and cascade radius **scales
 depth** (mean 1.0 / 2.9 / 5.0 at depths 3 / 5 / 7) — the stages-traversed signature MAS-FIRE leaves
 unquantified. Adding **LLM-as-router** and **Oracle** routing policies, we further show cascade containment is
 **policy-conditioned**: an LLM router that re-derives from trusted state cuts latent cascade radius
-~5.5× over rule-based baselines at depth 7, the benefit widening as pipelines deepen. We frame these
+~5.5× over rule-based baselines at depth 7 — though an ablation (§5.5) shows this gain is largely the
+trusted-state signal, not autonomous detection. We frame these
 as mechanism probes on a controlled chain, not domain-workload claims (§7).
 
 ---
@@ -305,6 +306,16 @@ policy-conditioned signature MAS-FIRE does not measure (**Figure 3**).
 
 Data: `data/measured/exp2_policy_real.csv` + `exp3_policy_real.csv`; regenerate via
 `scripts/analyze_measured.py`.
+
+**Ablation — the model, or the hint? (real Claude, N=90).** The LLM-policy rows above hand the router
+the trusted upstream value — a possible information leak (flagged in review). We re-ran Exp 2 with an
+`llm_noupstream` policy: the *same* self-correction prompt but **without** the trusted-upstream hint.
+Latent recovery **collapses from 0.75 [0.50, 1.00] (llm) to 0.17 [0.00, 0.42] (llm_noupstream)** — barely
+above the baseline 0.08 — a paired drop of **0.58 [0.17, 0.92], p<0.01**. So the LLM policy's containment
+is **mostly the trusted-upstream signal, not autonomous fault detection**: a blind LLM self-check recovers
+only marginally over baseline. We therefore read the LLM column as a **trusted-state probe** (what
+near-perfect upstream knowledge buys), *not* as evidence that an LLM router autonomously contains latent
+cascades — the honest scope of the policy-conditioned result. Data: `data/measured/exp2_ablation_real.csv`.
 
 ---
 

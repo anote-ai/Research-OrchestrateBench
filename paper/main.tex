@@ -59,7 +59,8 @@ at depths 3 / 5 / 7) --- the stages-traversed signature MAS-FIRE leaves
 unquantified. A policy-conditioned extension further suggests that containment
 can improve under a stronger self-correction semantics: with trusted upstream
 state, an LLM router cuts latent cascade radius $\sim$5.5$\times$ over rule-based
-baselines at depth 7. We frame these as controlled-chain mechanism probes, not
+baselines at depth 7 --- but an ablation shows this gain is largely the
+trusted-state signal, not autonomous detection. We frame these as controlled-chain mechanism probes, not
 domain-workload claims (\S\ref{sec:limitations}).
 \end{abstract}
 
@@ -478,6 +479,16 @@ LLM router stays nearly flat (0.25 / 0.75 / 0.83) and Oracle fully contains (0 /
 benefits can become larger in deeper pipelines, while the deployable-routing
 version remains future work (Figure~\ref{fig:policy}). The policy CSVs are
 committed under \texttt{data/measured/}.
+
+\textbf{Ablation: the model, or the hint?} The rows above hand the router the
+trusted upstream value --- a possible information leak. Re-running Exp 2 with an
+\texttt{llm\_noupstream} policy (same self-correction, \emph{no} trusted-upstream
+hint) collapses latent recovery from \textbf{0.75 [0.50, 1.00]} to
+\textbf{0.17 [0.00, 0.42]}, barely above the baseline 0.08 (paired drop
+\textbf{0.58 [0.17, 0.92], $p<0.01$}). The LLM policy's containment is thus
+\emph{mostly the trusted-upstream signal, not autonomous detection}: we read the
+LLM column as a trusted-state probe, not evidence that an LLM router autonomously
+contains latent cascades (\texttt{exp2\_ablation\_real.csv}).
 
 \begin{figure}[t]
 \centering
