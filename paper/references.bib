@@ -1,15 +1,19 @@
 % ============================================================================
 % references.bib  --  OrchestraBench (DAI 2026 submission)
 %
-% STATUS (2026-06-23): all 11 cited works verified to exist on arXiv / in
-% proceedings via web search; titles, arXiv IDs, and (where found) author lists
-% filled in from the resolved records. Remaining VERIFY notes mark only the
-% author lists that the search did not surface, plus the internal Anote paper.
+% STATUS (2026-06-26): every externally cited entry re-verified one-by-one against
+% its arXiv abstract page -- titles and full author lists match the live records
+% (doctorrag title + 3 missing authors corrected on re-check). Internal concurrent
+% work remains anonymized for double-blind review.
 % ============================================================================
 
 @misc{mast,
   title         = {Why Do Multi-Agent {LLM} Systems Fail?},
-  author        = {Cemri, Mert and Pan, Melissa Z. and Yang, Shuyi and others},
+  author        = {Cemri, Mert and Pan, Melissa Z. and Yang, Shuyi and
+                   Agrawal, Lakshya A. and Chopra, Bhavya and Tiwari, Rishabh
+                   and Keutzer, Kurt and Parameswaran, Aditya and Klein, Dan
+                   and Ramchandran, Kannan and Zaharia, Matei and Gonzalez,
+                   Joseph E. and Stoica, Ion},
   year          = {2025},
   eprint        = {2503.13657},
   archivePrefix = {arXiv},
@@ -33,17 +37,21 @@
 @misc{traceelephant,
   title         = {Seeing the Whole Elephant: A Benchmark for Failure Attribution
                    in {LLM}-based Multi-Agent Systems},
+  author        = {Chen, Mengzhuo and Wang, Junjie and Mu, Fangwen and Wang,
+                   Yawen and Liu, Zhe and Feng, Huanxiang and Wang, Qing},
   year          = {2026},
   eprint        = {2604.22708},
   archivePrefix = {arXiv},
   note          = {220 annotated failure traces; full-execution-observability
-                   attribution. VERIFY: author list}
+                   attribution}
 }
 
 @inproceedings{attribution,
   title     = {Which Agent Causes Task Failures and When? On Automated Failure
                Attribution of {LLM} Multi-Agent Systems},
-  author    = {Zhang, Shaokun and Yin, Ming and Zhang, Jieyu and others},
+  author    = {Zhang, Shaokun and Yin, Ming and Zhang, Jieyu and Liu, Jiale and
+               Han, Zhiguang and Zhang, Jingyang and Li, Beibin and Wang, Chi and
+               Wang, Huazheng and Chen, Yiran and Wu, Qingyun},
   booktitle = {Proceedings of the 42nd International Conference on Machine Learning
                (ICML), Spotlight},
   year      = {2025},
@@ -66,38 +74,50 @@
 @misc{adaptorch,
   title         = {{AdaptOrch}: Task-Adaptive Multi-Agent Orchestration in the Era
                    of {LLM} Performance Convergence},
+  author        = {Yu, Geunbin},
   year          = {2026},
   eprint        = {2602.16873},
   archivePrefix = {arXiv},
-  note          = {Task-adaptive orchestration method (+12--23\%). VERIFY: author list}
+  note          = {Task-adaptive orchestration method (+12--23\%)}
 }
 
 @misc{sparkfire,
   title         = {From Spark to Fire: Modeling and Mitigating Error Cascades in
                    {LLM}-Based Multi-Agent Collaboration},
+  author        = {Xie, Yizhe and Zhu, Congcong and Zhang, Xinyue and Zhu,
+                   Tianqing and Ye, Dayong and Qi, Minfeng and Chen, Huajie and
+                   Zhou, Wanlei},
   year          = {2026},
   eprint        = {2603.04474},
   archivePrefix = {arXiv},
-  note          = {Error cascades in agent pipelines. VERIFY: author list}
+  note          = {Error cascades in agent pipelines}
 }
 
 @misc{beyondstrongest,
   title         = {Beyond the Strongest {LLM}: Multi-Turn Multi-Agent Orchestration
                    vs.\ Single {LLM}s on Benchmarks},
+  author        = {Tian, Aaron Xuxiang and Zhang, Ruofan and Tang, Jiayao and
+                   Cho, Young Min and Li, Xueqian and Yi, Qiang and Wang, Ji and
+                   Zhang, Zhunping and Qi, Danrui and Li, Zekun and Xiang, Xingyu
+                   and Guntuku, Sharath Chandra and Ungar, Lyle and Shi, Tianyu
+                   and Wang, Chi},
   year          = {2025},
   eprint        = {2509.23537},
   archivePrefix = {arXiv},
   note          = {GPQA-Diamond: at least one agent correct in 95.5\% of cases vs.\
-                   87.4\% orchestrated. VERIFY: author list}
+                   87.4\% orchestrated}
 }
 
 @misc{doctorrag,
-  title         = {{Doctor-RAG}: Diagnosing and Repairing {RAG} Failures},
+  title         = {{Doctor-RAG}: A Failure-Aware Repair Framework for Agentic
+                   Retrieval-Augmented Generation},
+  author        = {Jiao, Shuguang and Huang, Chengkai and Qi, Shuhan and Wang,
+                   Xuan and Li, Yifan and Weng, Quanchi and Liu, Lingchuan and
+                   Cai, Xunliang and Yao, Lina},
   year          = {2026},
   eprint        = {2604.00865},
   archivePrefix = {arXiv},
-  note          = {Not cited in current draft; kept for completeness.
-                   VERIFY: arXiv ID and author list}
+  note          = {Not cited in current draft; kept for completeness}
 }
 
 % CAMERA-READY: restore author = {Haing, Susana and others}; note = Anote Paper #2 (S. Haing / Spurthi)
@@ -110,7 +130,12 @@
 
 @inproceedings{agentbench,
   title     = {{AgentBench}: Evaluating {LLM}s as Agents},
-  author    = {Liu, Xiao and Yu, Hao and Zhang, Hanchen and Xu, Yifan and others},
+  author    = {Liu, Xiao and Yu, Hao and Zhang, Hanchen and Xu, Yifan and Lei,
+               Xuanyu and Lai, Hanyu and Gu, Yu and Ding, Hangliang and Men,
+               Kaiwen and Yang, Kejuan and Zhang, Shudan and Deng, Xiang and
+               Zeng, Aohan and Du, Zhengxiao and Zhang, Chenhui and Shen, Sheng
+               and Zhang, Tianjun and Su, Yu and Sun, Huan and Huang, Minlie and
+               Dong, Yuxiao and Tang, Jie},
   booktitle = {International Conference on Learning Representations (ICLR)},
   year      = {2024},
   note      = {arXiv:2308.03688; 8 environments, 27 LLMs}
@@ -128,9 +153,10 @@
 @misc{odysseybench,
   title         = {{OdysseyBench}: Evaluating {LLM} Agents on Long-Horizon Complex
                    Office Application Workflows},
+  author        = {Wang, Weixuan and Han, Dongge and Diaz, Daniel Madrigal and
+                   Xu, Jin and R{\"u}hle, Victor and Rajmohan, Saravan},
   year          = {2025},
   eprint        = {2508.09124},
   archivePrefix = {arXiv},
-  note          = {602 long-horizon office tasks (300 real + 302 synthesized).
-                   VERIFY: author list}
+  note          = {602 long-horizon office tasks (300 real + 302 synthesized)}
 }
