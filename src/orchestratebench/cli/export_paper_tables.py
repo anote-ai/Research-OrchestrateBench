@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 from typing import Sequence
 
-from orchestratebench.paper_reports import (
+from orchestratebench.publication import (
     build_exp2_latex_tables,
     build_exp2_markdown_report,
     build_exp3_latex_tables,

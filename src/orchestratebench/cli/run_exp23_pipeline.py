@@ -15,9 +15,9 @@ from orchestratebench.cli._common import parse_int_list, parse_list, run_step
 from orchestratebench.cli.run_exp2 import main as run_exp2_main
 from orchestratebench.cli.run_exp3 import main as run_exp3_main
 from orchestratebench.cli.validate_measured_input import main as validate_measured_input_main
+from orchestratebench.experiment_artifacts import write_json_file
 from orchestratebench.failures import FailureMode
 from orchestratebench.measured_templates import DEFAULT_MEASURED_POLICIES
-from orchestratebench.experiments import write_json_file
 
 
 def build_parser() -> argparse.ArgumentParser:

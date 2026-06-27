@@ -7,13 +7,9 @@ import math
 
 import pytest
 
-from orchestratebench import (
-    FixedPolicy,
-    HeuristicPolicy,
+from orchestratebench.core import FixedPolicy, HeuristicPolicy, OrchestratorAction, RoutingDecision, SubAgentType
+from orchestratebench.routing_comparison import (
     LLMPolicy,
-    OrchestratorAction,
-    RoutingDecision,
-    SubAgentType,
     format_comparison_report,
     make_routing_eval_set,
     run_routing_comparison,
