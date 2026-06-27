@@ -2,11 +2,12 @@
 
 from __future__ import annotations
 
+import pytest
+
 from orchestratebench.core import TaskStatus
 from orchestratebench.data import (
     make_benchmark_tasks,
     make_execution_trace,
-    make_task,
 )
 from orchestratebench.evaluate import (
     confidence_calibration,
@@ -25,8 +26,6 @@ from orchestratebench.evaluate import (
     task_dependency_score,
     throughput_score,
 )
-
-import pytest
 
 
 def _make_traces(n: int = 5, success: bool = True):
