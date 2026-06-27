@@ -4,21 +4,23 @@ from __future__ import annotations
 
 import json
 
+import pytest
+
 from orchestratebench.core import FixedPolicy, HeuristicPolicy, RetryPolicy
 from orchestratebench.data import make_linear_pipeline
 from orchestratebench.experiments import (
     CASCADE_PAIRWISE_METRICS,
     FAILURE_RECOVERY_PAIRWISE_METRICS,
-    compare_policy_pairs,
     collect_cascade_records,
     collect_failure_recovery_records,
+    compare_policy_pairs,
     format_cascade_report,
-    format_pairwise_report,
     format_cascade_sweep_report,
+    format_pairwise_report,
     format_recovery_report,
+    run_cascade_by_depth,
     run_cascade_diagnostics_by_depth,
     run_cascade_stage_sweep,
-    run_cascade_by_depth,
     run_failure_recovery,
     summarize_cascade_records,
     summarize_failure_recovery_records,
@@ -26,8 +28,6 @@ from orchestratebench.experiments import (
     write_records_csv,
 )
 from orchestratebench.failures import FailureMode
-
-import pytest
 
 
 class TestLinearPipeline:

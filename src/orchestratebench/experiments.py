@@ -14,20 +14,20 @@ mechanism demo of the harness, not as the reportable results.
 from __future__ import annotations
 
 import random
-from typing import Any, Dict, List, Optional, Sequence
+from typing import Any, Dict, List, Optional
 
+from .console_reports import (
+    format_cascade_report,
+    format_cascade_sweep_report,
+    format_pairwise_report,
+    format_recovery_report,
+)
 from .core import AgentTask
 from .data import (
     make_devops_deploy_workflow,
     make_finance_approval_workflow,
     make_hr_onboarding_workflow,
     make_linear_pipeline,
-)
-from .console_reports import (
-    format_cascade_report,
-    format_cascade_sweep_report,
-    format_pairwise_report,
-    format_recovery_report,
 )
 from .experiment_analysis import (
     CASCADE_PAIRWISE_METRICS,
@@ -38,6 +38,27 @@ from .experiment_analysis import (
 )
 from .experiment_artifacts import write_json_file, write_records_csv
 from .failures import FailureMode, measure_cascade
+
+__all__ = [
+    "CASCADE_PAIRWISE_METRICS",
+    "FAILURE_RECOVERY_PAIRWISE_METRICS",
+    "collect_cascade_records",
+    "collect_failure_recovery_records",
+    "compare_policy_pairs",
+    "default_workflow_suite",
+    "format_cascade_report",
+    "format_cascade_sweep_report",
+    "format_pairwise_report",
+    "format_recovery_report",
+    "run_cascade_by_depth",
+    "run_cascade_diagnostics_by_depth",
+    "run_cascade_stage_sweep",
+    "run_failure_recovery",
+    "summarize_cascade_records",
+    "summarize_failure_recovery_records",
+    "write_json_file",
+    "write_records_csv",
+]
 
 
 def default_workflow_suite() -> Dict[str, List[AgentTask]]:

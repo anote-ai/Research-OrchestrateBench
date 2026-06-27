@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import pytest
+
 from orchestratebench.data import make_benchmark_tasks, make_execution_trace
 from orchestratebench.evaluate import mean_cost, policy_comparison, success_rate
 from orchestratebench.statistics import (
@@ -10,8 +12,6 @@ from orchestratebench.statistics import (
     paired_bootstrap_test,
     paired_bootstrap_values,
 )
-
-import pytest
 
 
 def _make_traces(n: int = 5, success: bool = True):

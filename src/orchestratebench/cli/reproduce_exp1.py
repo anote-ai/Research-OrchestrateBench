@@ -4,14 +4,13 @@ from __future__ import annotations
 
 import os
 
-from orchestratebench.core import OrchestratorAction, RoutingDecision
+from orchestratebench.core import FixedPolicy, HeuristicPolicy, OrchestratorAction, RoutingDecision
 from orchestratebench.routing_comparison import (
     LLMPolicy,
     format_comparison_report,
     make_routing_eval_set,
     run_routing_comparison,
 )
-from orchestratebench.core import FixedPolicy, HeuristicPolicy
 
 MODEL = os.getenv("ORCHESTRATEBENCH_LLM_MODEL", "claude-sonnet-4-6")
 

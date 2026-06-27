@@ -3,6 +3,5 @@
 
 from orchestratebench.cli.run_exp23_pipeline import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

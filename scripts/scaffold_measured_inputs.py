@@ -3,6 +3,5 @@
 
 from orchestratebench.cli.scaffold_measured_inputs import main
 
-
 if __name__ == "__main__":
     raise SystemExit(main())

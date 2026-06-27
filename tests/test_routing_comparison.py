@@ -5,16 +5,19 @@ LLMPolicy is tested with an injected fake client — no API key or network.
 
 import math
 
-import pytest
-
-from orchestratebench.core import FixedPolicy, HeuristicPolicy, OrchestratorAction, RoutingDecision, SubAgentType
+from orchestratebench.core import (
+    FixedPolicy,
+    HeuristicPolicy,
+    OrchestratorAction,
+    RoutingDecision,
+    SubAgentType,
+)
 from orchestratebench.routing_comparison import (
     LLMPolicy,
     format_comparison_report,
     make_routing_eval_set,
     run_routing_comparison,
 )
-
 
 # --------------------------------------------------------------------------- #
 # Fakes for the Anthropic client (so LLMPolicy needs no key/network)

@@ -14,6 +14,7 @@ from collections import defaultdict
 from pathlib import Path
 
 import matplotlib
+
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
@@ -43,10 +44,15 @@ def fig1_cascade_by_depth() -> None:
     plt.figure(figsize=(5, 3.2))
     plt.plot(depths, [np.mean(lat[d]) for d in depths], "o-", color="#B03A2E", label="latent / semantic modes")
     plt.plot(depths, [np.mean(tool[d]) for d in depths], "s-", color="#1E8449", label="tool_invocation_error")
-    plt.xlabel("pipeline depth"); plt.ylabel("mean cascade radius")
+    plt.xlabel("pipeline depth")
+    plt.ylabel("mean cascade radius")
     plt.title("Cascade radius scales with depth\n(real Claude Sonnet 4.6, N=90)", fontsize=10)
-    plt.xticks(depths); plt.legend(fontsize=8); plt.grid(alpha=0.3); plt.tight_layout()
-    plt.savefig(OUT / "exp3_cascade_by_depth.png", dpi=150); plt.close()
+    plt.xticks(depths)
+    plt.legend(fontsize=8)
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(OUT / "exp3_cascade_by_depth.png", dpi=150)
+    plt.close()
 
 
 def fig2_arith_vs_domain() -> None:
@@ -62,11 +68,14 @@ def fig2_arith_vs_domain() -> None:
     plt.figure(figsize=(6.6, 3.5))
     plt.bar(x - w / 2, [arith.get(m, 0) for m in modes], w, label="arithmetic chain", color="#377AB7")
     plt.bar(x + w / 2, [domain.get(m, 0) for m in modes], w, label="loan-approval workflow", color="#E69F00")
-    plt.ylabel("final-task success"); plt.ylim(0, 1.08)
+    plt.ylabel("final-task success")
+    plt.ylim(0, 1.08)
     plt.title("Failure-mode recovery: arithmetic vs domain workflow\n(real Claude, N=30 each)", fontsize=10)
     plt.xticks(x, [m.replace("_", "\n") for m in modes], fontsize=7)
-    plt.legend(fontsize=8); plt.tight_layout()
-    plt.savefig(OUT / "exp2_arith_vs_domain.png", dpi=150); plt.close()
+    plt.legend(fontsize=8)
+    plt.tight_layout()
+    plt.savefig(OUT / "exp2_arith_vs_domain.png", dpi=150)
+    plt.close()
 
 
 def fig3_policy_cascade() -> None:
@@ -85,10 +94,15 @@ def fig3_policy_cascade() -> None:
              label="baseline (fixed/heuristic/retry)")
     plt.plot(depths, cas({"llm"}), "s-", color="#2874A6", label="LLM-as-router")
     plt.plot(depths, cas({"oracle"}), "^-", color="#1E8449", label="Oracle (ceiling)")
-    plt.xlabel("pipeline depth"); plt.ylabel("mean cascade radius (latent)")
+    plt.xlabel("pipeline depth")
+    plt.ylabel("mean cascade radius (latent)")
     plt.title("Cascade containment is policy-conditioned\n(real Claude, N=225)", fontsize=10)
-    plt.xticks(depths); plt.legend(fontsize=8); plt.grid(alpha=0.3); plt.tight_layout()
-    plt.savefig(OUT / "exp3_policy_cascade.png", dpi=150); plt.close()
+    plt.xticks(depths)
+    plt.legend(fontsize=8)
+    plt.grid(alpha=0.3)
+    plt.tight_layout()
+    plt.savefig(OUT / "exp3_policy_cascade.png", dpi=150)
+    plt.close()
 
 
 def main() -> None:
