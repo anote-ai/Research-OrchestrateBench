@@ -1,8 +1,12 @@
 .DS_Store
 __pycache__/
 *.py[cod]
+*.egg-info/
 .pytest_cache/
 artifacts/
+build/
+dist/
+uv.lock
 
 # local virtualenv
 .venv/

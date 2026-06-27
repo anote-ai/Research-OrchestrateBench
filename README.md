@@ -33,10 +33,10 @@ The current repository includes:
 
 | Experiment | Current status | Best entrypoint |
 |---|---|---|
-| Exp 1: routing diagnostic | Measured and reproducible in-repo | `python3 scripts/reproduce_exp1.py` |
-| Exp 2: failure recovery | Auto-harness pipeline available; collaborative measured input path supported | `./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error` |
-| Exp 3: cascade propagation | Auto-harness pipeline available; collaborative measured input path supported | `./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error` |
-| Exp 4: decomposition quality | Planned | n/a |
+| Exp 1: routing diagnostic | Measured and reproducible in-repo | `orbench-reproduce-exp1` |
+| Exp 2: failure recovery | Auto-harness pipeline available; collaborative measured input path supported | `orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error` |
+| Exp 3: cascade propagation | Auto-harness pipeline available; collaborative measured input path supported | `orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error` |
+| Exp 4: decomposition quality | Experimental controlled-probe measured results committed; broader external study remains future work | `orbench-analyze-measured` |
 
 Useful repository documents:
 
@@ -85,22 +85,27 @@ python3 -m pip install -e ".[dev]"
 python3 -m pytest -q
 ```
 
+After installation, packaged console commands are available. The legacy
+`scripts/*.py` wrappers still work, but the `orbench-*` commands are the
+supported entrypoints going forward.
+
 Fastest entrypoints by task:
 
 | Goal | Command |
 |---|---|
-| Demo the routing policies | `python3 scripts/run_demo.py` |
-| Reproduce Exp 1 measured diagnostic | `python3 scripts/reproduce_exp1.py` |
-| Run Exp 2/3 auto-harness pipeline | `./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error` |
-| Scaffold real measured input files | `python3 scripts/scaffold_measured_inputs.py --output-dir data/measured` |
-| Validate a collaborative measured file | `python3 scripts/validate_measured_input.py --experiment 2 --input-file path/to/exp2_measured.csv --strict` |
+| Demo the routing policies | `orbench-demo` |
+| Reproduce Exp 1 measured diagnostic | `orbench-reproduce-exp1` |
+| Run Exp 2/3 auto-harness pipeline | `orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error` |
+| Scaffold real measured input files | `orbench-scaffold-measured --output-dir data/measured` |
+| Validate a collaborative measured file | `orbench-validate-measured --experiment 2 --input-file path/to/exp2_measured.csv --strict` |
+| Recompute committed measured results (Exp 2/3/4) | `orbench-analyze-measured` |
 
 ## Reproducing Experiments
 
 ### Experiment 1
 
 ```bash
-python3 scripts/reproduce_exp1.py
+orbench-reproduce-exp1
 ```
 
 Notes:
@@ -111,7 +116,7 @@ Notes:
 ### Experiment 2 / 3 auto-harness path
 
 ```bash
-./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error
+orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error
 ```
 
 This command:
@@ -134,11 +139,12 @@ Main outputs:
 If you are analyzing a real external run rather than the built-in harness:
 
 ```bash
-python3 scripts/scaffold_measured_inputs.py --output-dir data/measured
-python3 scripts/validate_measured_input.py --experiment 2 --input-file path/to/exp2_measured.csv --strict
-python3 scripts/run_exp2.py --input-file path/to/exp2_measured.csv --with-ci
-python3 scripts/validate_measured_input.py --experiment 3 --input-file path/to/exp3_measured.jsonl --strict
-python3 scripts/run_exp3.py --input-file path/to/exp3_measured.jsonl --with-ci
+orbench-scaffold-measured --output-dir data/measured
+orbench-validate-measured --experiment 2 --input-file path/to/exp2_measured.csv --strict
+orbench-run-exp2 --input-file path/to/exp2_measured.csv --with-ci
+orbench-validate-measured --experiment 3 --input-file path/to/exp3_measured.jsonl --strict
+orbench-run-exp3 --input-file path/to/exp3_measured.jsonl --with-ci
+orbench-analyze-measured
 ```
 
 See [REPRODUCIBILITY.md](REPRODUCIBILITY.md)
@@ -153,10 +159,16 @@ for the full provenance rules and artifact semantics.
   dependency metrics
 - `src/orchestratebench/failures.py` — failure injection, recovery, detection,
   and cascade measurement
-- `src/orchestratebench/experiments.py` — Experiment 2/3 runners, long-form
-  records, artifact export, and summary helpers
-- `src/orchestratebench/paper_reports.py` — Markdown and LaTeX export helpers
-- `scripts/` — one-command experiment entrypoints and validation utilities
+- `src/orchestratebench/experiments.py` — Experiment 2/3 runners and workflow
+  orchestration
+- `src/orchestratebench/experiment_analysis.py` — grouped summaries and paired
+  bootstrap comparisons
+- `src/orchestratebench/experiment_artifacts.py` — CSV / JSON artifact writers
+- `src/orchestratebench/console_reports.py` — human-readable text report
+  renderers
+- `src/orchestratebench/publication.py` — Markdown and LaTeX publication
+  outputs
+- `scripts/` — backwards-compatible wrappers for the packaged CLI commands
 - `examples/` — minimal measured-input templates
 - `tests/` — unit tests for routing, failure injection, measured input loading,
   statistics, and reporting
@@ -169,8 +181,16 @@ Continuous integration runs on push and pull request to `main` for Python 3.10,
 Local developer check:
 
 ```bash
+ruff check .
+python3 -m build
 python3 -m pytest -q
 ```
+
+## Generated Artifacts
+
+The repository treats local packaging and build outputs as disposable tooling
+artifacts. Files such as `src/*.egg-info/`, `build/`, `dist/`, and `uv.lock`
+are ignored and should not be reviewed as benchmark evidence or source edits.
 
 ## Research Scope Notes
 

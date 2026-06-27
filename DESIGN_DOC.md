@@ -184,7 +184,7 @@ include gold labels.
 
 ### Experiment 2 — Failure injection and recovery *(real Claude measured run done, N=30 + domain N=30; offline harness = large-N projection — core, with Y. Gu / #4)*
 
-> **Real measured findings (Claude Sonnet 4.6, N=30).** A real Claude agent runs a verifiable arithmetic dependency chain with prompt-level injection and exact-match grading (`real_run.py`): `tool_invocation_error` fully recovers (recovery 1.0, cascade 0); the four latent/semantic modes all fail (final-task success 0.0, cascade radius 2/2); `retry(heuristic)` does **not** recover them. A domain-grounded loan-approval re-run (N=30) shows the failure-mode *ordering* is robust across framings while absolute rates shift (`ambiguous_delegation` 0→0.5, `tool` 1→0.67). Data: `data/measured/exp2_real.csv` + `exp2_domain_real.csv`; regenerate via `scripts/analyze_measured.py`. The offline auto-harness notes below are retained as a large-N projection / mechanism check. **Policy-conditioned (review R2):** adding LLM-as-router + Oracle shows containment is governed by the routing policy — baseline latent recovery 0.08 / cascade 1.83 vs LLM 0.83 / 0.33 vs Oracle 1.0 / 0; the gap amplifies with depth (Exp 3: baseline cascade 0.9→4.6 across depths 3→7 vs LLM flat 0.25→0.83). LLM-policy semantics = a documented assumption pending alignment. Data: `exp2_policy_real.csv`, `exp3_policy_real.csv`.
+> **Real measured findings (Claude Sonnet 4.6, N=30).** A real Claude agent runs a verifiable arithmetic dependency chain with prompt-level injection and exact-match grading (`real_run.py`): `tool_invocation_error` fully recovers (recovery 1.0, cascade 0); the four latent/semantic modes all fail (final-task success 0.0, cascade radius 2/2); `retry(heuristic)` does **not** recover them. A domain-grounded loan-approval re-run (N=30) shows the failure-mode *ordering* is robust across framings while absolute rates shift (`ambiguous_delegation` 0→0.5, `tool` 1→0.67). Data: `data/measured/exp2_real.csv` + `exp2_domain_real.csv`; regenerate via `orbench-analyze-measured`. The offline auto-harness notes below are retained as a large-N projection / mechanism check. **Policy-conditioned (review R2):** adding LLM-as-router + Oracle shows containment is governed by the routing policy — baseline latent recovery 0.08 / cascade 1.83 vs LLM 0.83 / 0.33 vs Oracle 1.0 / 0; the gap amplifies with depth (Exp 3: baseline cascade 0.9→4.6 across depths 3→7 vs LLM flat 0.25→0.83). LLM-policy semantics = a documented assumption pending alignment. Data: `exp2_policy_real.csv`, `exp3_policy_real.csv`.
 
 - **Setup**: Using the MAST failure taxonomy, inject controlled failures at specific pipeline stages.
   Start with five high-frequency modes: ambiguous delegation, tool invocation error, context
@@ -201,7 +201,7 @@ include gold labels.
   `mean_escalation_latency_ms`, `mean_cascade_radius`). The runner exports long-form raw runs,
   grouped CSV/JSON summaries, paired bootstrap policy-comparison artifacts, and paper-facing
   Markdown / LaTeX tables. It also accepts collaborative measured records from `.csv`, `.jsonl`,
-  or `.json` via `--input-file`, with schema validation in `scripts/validate_measured_input.py`.
+  or `.json` via `--input-file`, with schema validation in `orbench-validate-measured`.
 - **Current auto-harness findings (2026-06-20)**: `retry(heuristic)` only helps on the explicitly
   retryable `tool_invocation_error` mode: recovery rate = **1.0**, final-task success = **1.0**,
   mean cascade radius = **0.0**, and escalation latency = **0.0**. On `ambiguous_delegation`,
@@ -219,7 +219,7 @@ include gold labels.
 
 ### Experiment 3 — Cascade propagation depth *(real Claude measured run done, N=90; offline harness = large-N projection — core, with Y. Gu / #7)*
 
-> **Real measured findings (Claude Sonnet 4.6, N=90).** `run_exp3` extends the real-agent design to variable depth (single injection at stage 1; depths 3/5/7). Mean cascade radius scales monotonically with depth — **1.0 [1.0, 1.0] / 2.88 [2.63, 3.0] / 5.0 [5.0, 5.0]** (latent modes pooled, bootstrap 95% CI); `tool_invocation_error` stays at 0 at every depth. This is the headline cascade-depth result and the primary differentiator vs. MAS-FIRE. Data: `data/measured/exp3_real.csv`; regenerate via `scripts/analyze_measured.py`.
+> **Real measured findings (Claude Sonnet 4.6, N=90).** `run_exp3` extends the real-agent design to variable depth (single injection at stage 1; depths 3/5/7). Mean cascade radius scales monotonically with depth — **1.0 [1.0, 1.0] / 2.88 [2.63, 3.0] / 5.0 [5.0, 5.0]** (latent modes pooled, bootstrap 95% CI); `tool_invocation_error` stays at 0 at every depth. This is the headline cascade-depth result and the primary differentiator vs. MAS-FIRE. Data: `data/measured/exp3_real.csv`; regenerate via `orbench-analyze-measured`.
 
 - **Setup**: Inject a single seeded error at stage 1, 2, or 3 of multi-stage workflows and measure how
   many downstream stages are corrupted. The analyzer consumes exactly one `failure_mode` per file;
@@ -234,7 +234,7 @@ include gold labels.
   `mean_time_to_detection_ms`). The current runner now sweeps injection stages 1/2/3 and exports
   long-form raw runs, grouped CSV/JSON summaries, and paired bootstrap policy-comparison artifacts.
   It can now also ingest *measured* collaborative records from `.csv`, `.jsonl`, or `.json` via
-  `--input-file`, with schema validation in `scripts/validate_measured_input.py`, and emit
+  `--input-file`, with schema validation in `orbench-validate-measured`, and emit
   paper-facing markdown / LaTeX tables; this remains the primary differentiation against generic
   fault injection work.
 - **Current auto-harness findings (2026-06-20, `context_pollution`)**: earlier-stage failures
@@ -256,7 +256,7 @@ include gold labels.
 
 ### Experiment 4 — Decomposition quality *(real Claude measured run done, N=20)*
 
-> **Real measured findings (Claude Sonnet 4.6, N=20).** For composite tasks `(a op b) op (c op d)` with a canonical 3-step gold, the `decompose` policy reaches delegation fidelity **1.00** / granularity error **0**, vs `monolithic` **0.37 [0.33, 0.43]** / **2**; paired bootstrap over the 10 shared tasks gives fidelity **+0.63 [0.57, 0.67], p<0.0001**. `final_correct` is 1.0 for both — the discriminator is decomposition structure, not the final answer. Data: `data/measured/exp4_real.csv`; regenerate via `scripts/analyze_measured.py`.
+> **Real measured findings (Claude Sonnet 4.6, N=20).** For composite tasks `(a op b) op (c op d)` with a canonical 3-step gold, the `decompose` policy reaches delegation fidelity **1.00** / granularity error **0**, vs `monolithic` **0.37 [0.33, 0.43]** / **2**; paired bootstrap over the 10 shared tasks gives fidelity **+0.63 [0.57, 0.67], p<0.0001**. `final_correct` is 1.0 for both — the discriminator is decomposition structure, not the final answer. Data: `data/measured/exp4_real.csv`; regenerate via `orbench-analyze-measured`.
 
 - **Setup**: For high-complexity tasks (`complexity_score > 0.7`) that trigger `DECOMPOSE`, compare
   the sub-task decomposition against expert-annotated gold decompositions.
@@ -386,18 +386,18 @@ Every reported number should be regenerable from a fixed seed. Artifact-release 
 - [x] Exp 2/3 measured-input schema, templates, and validator are in repo for collaborative runs.
 - [x] Exp 2/3 scripts now emit paper-facing markdown / LaTeX summary artifacts from the same run.
 - [x] Exp 2/3 now have a one-command reproduction entrypoint
-  (`./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error`)
+  (`orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error`)
   that generates measured-style inputs, validates them, runs the analyzers, and writes a manifest.
 - [x] Experiment 1 diagnostic has measured Fixed / Heuristic / LLM / Oracle results.
 - [ ] Exp 2/3 collaborative external measured results.
-- [ ] Exp 4 measured results.
+- [x] Exp 4 controlled-probe measured results are committed; broader external measured study remains future work.
 - [ ] Full workflow-suite seeds + held-out split.
 - [ ] Cost log by experiment.
 
 **Current reproducibility entrypoint.** The in-repo baseline for Experiments 2/3 is now:
 
 ```bash
-./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error
+orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error
 ```
 
 This writes measured-style inputs plus analysis artifacts under `artifacts/exp23_pipeline/`,
@@ -424,7 +424,7 @@ used.
 - **Codebase status**: Exp 2/3 harness now supports retry-wrapped policies, emits recovery,
   final-task-success, detection, escalation, and cascade diagnostics, accepts measured long-form
   collaborative inputs with preflight validation, and can reproduce the full Exp 2/3 artifact set
-  from one command via `scripts/run_exp23_pipeline.py`.
+  from one command via `orbench-run-exp23-pipeline`.
 - **Current harness result summary (2026-06-20)**: Exp 2 shows that retry helps on
   `tool_invocation_error` but not on latent semantic failures; Exp 3 shows that earlier injection
   stages and deeper pipelines enlarge cascade radius for `context_pollution`, while

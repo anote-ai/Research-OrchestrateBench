@@ -10,14 +10,14 @@ OrchestrateBench currently contains three different evidence types:
 
 | Evidence type | Status | Where it lives | Can it be cited as final paper evidence? |
 |---|---|---|---|
-| Experiment 1 measured routing diagnostic | Available now | `scripts/reproduce_exp1.py` | Yes, with the usual model/version caveats |
-| Experiment 2/3/4 real Claude measured runs | Available now | `data/measured/*_real.csv` + `scripts/analyze_measured.py` | Yes — real measured agent results (Sonnet 4.6; controlled-probe scope, §7) |
-| Experiment 2/3 auto-harness mechanism results | Available now | `scripts/run_exp23_pipeline.py` | Yes for mechanism validation; no as the final external measured result |
+| Experiment 1 measured routing diagnostic | Available now | `orbench-reproduce-exp1` | Yes, with the usual model/version caveats |
+| Experiment 2/3/4 real Claude measured runs | Available now | `data/measured/*_real.csv` + `orbench-analyze-measured` | Yes — real measured agent results (Sonnet 4.6; controlled-probe scope, §7) |
+| Experiment 2/3 auto-harness mechanism results | Available now | `orbench-run-exp23-pipeline` | Yes for mechanism validation; no as the final external measured result |
 | Experiment 2/3 collaborative external measured results | Planned / optional | `--input-file` path supplied by the user | Yes, once those records are collected and validated |
 
 The most important boundary is this:
 
-- `run_exp23_pipeline.py` generates **measured-style** CSVs from the current
+- `orbench-run-exp23-pipeline` generates **measured-style** CSVs from the current
   repo harness.
 - Those files are valid analyzer inputs, but they are still **repo-generated
   mechanism results**, not externally collected gold measurements.
@@ -31,6 +31,9 @@ python3 -m pip install -e ".[dev]"
 python3 -m pytest -q
 ```
 
+The installed package exposes `orbench-*` console commands; the legacy
+`scripts/*.py` wrappers remain as compatibility shims.
+
 The CI workflow tests Python 3.10, 3.11, and 3.12 on every push / pull
 request to `main`.
 
@@ -39,7 +42,7 @@ request to `main`.
 ### 1. Policy demo
 
 ```bash
-python3 scripts/run_demo.py
+orbench-demo
 ```
 
 Use this to sanity-check routing, latency, and cost behavior.
@@ -47,7 +50,7 @@ Use this to sanity-check routing, latency, and cost behavior.
 ### 2. Experiment 1 measured diagnostic
 
 ```bash
-python3 scripts/reproduce_exp1.py
+orbench-reproduce-exp1
 ```
 
 Notes:
@@ -58,7 +61,7 @@ Notes:
 ### 3. Experiment 2/3 auto-harness pipeline
 
 ```bash
-./scripts/run_exp23_pipeline.py --with-ci --exp3-modes context_pollution,tool_invocation_error
+orbench-run-exp23-pipeline --with-ci --exp3-modes context_pollution,tool_invocation_error
 ```
 
 This is the current one-command path for:
@@ -80,11 +83,11 @@ Outputs are written under:
 If you are measuring a real external system rather than the in-repo harness:
 
 ```bash
-python3 scripts/scaffold_measured_inputs.py --output-dir data/measured
-python3 scripts/validate_measured_input.py --experiment 2 --input-file path/to/exp2_measured.csv --strict
-python3 scripts/run_exp2.py --input-file path/to/exp2_measured.csv --with-ci
-python3 scripts/validate_measured_input.py --experiment 3 --input-file path/to/exp3_measured.jsonl --strict
-python3 scripts/run_exp3.py --input-file path/to/exp3_measured.jsonl --with-ci
+orbench-scaffold-measured --output-dir data/measured
+orbench-validate-measured --experiment 2 --input-file path/to/exp2_measured.csv --strict
+orbench-run-exp2 --input-file path/to/exp2_measured.csv --with-ci
+orbench-validate-measured --experiment 3 --input-file path/to/exp3_measured.jsonl --strict
+orbench-run-exp3 --input-file path/to/exp3_measured.jsonl --with-ci
 ```
 
 For this path, see also [data/measured/README.md](data/measured/README.md).
@@ -97,7 +100,7 @@ PAPER.md §5.2–§5.4 — per-mode recovery, cascade radius by depth, decomposi
 bootstrap 95% CIs and paired significance tests, directly from those CSVs (offline, no key):
 
 ```bash
-python3 scripts/analyze_measured.py
+orbench-analyze-measured
 ```
 
 ## Artifact Semantics
@@ -112,6 +115,13 @@ For Exp 2 and Exp 3, the main output files are:
 - `paper_summary.md`: Markdown summary suitable for the design doc / paper draft
 - `paper_tables.tex`: LaTeX tables for paper integration
 - `pipeline_manifest.json`: top-level provenance for the one-command pipeline
+
+## Generated Files
+
+Local tooling outputs such as `src/*.egg-info/`, `build/`, `dist/`, and
+`uv.lock` are ignored on purpose. They help with packaging and validation, but
+they are not benchmark artifacts and should not be cited or reviewed as part of
+the experimental evidence.
 
 ## Before Citing Numbers
 
