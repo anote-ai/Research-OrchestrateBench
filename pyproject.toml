@@ -32,6 +32,18 @@ dev = [
     "pytest>=9.0",
 ]
 
+[project.scripts]
+orbench-analyze-measured = "orchestratebench.cli.analyze_measured:main"
+orbench-demo = "orchestratebench.cli.run_demo:main"
+orbench-export-paper = "orchestratebench.cli.export_paper_tables:main"
+orbench-real-run = "orchestratebench.real_run:main"
+orbench-reproduce-exp1 = "orchestratebench.cli.reproduce_exp1:main"
+orbench-run-exp2 = "orchestratebench.cli.run_exp2:main"
+orbench-run-exp23-pipeline = "orchestratebench.cli.run_exp23_pipeline:main"
+orbench-run-exp3 = "orchestratebench.cli.run_exp3:main"
+orbench-scaffold-measured = "orchestratebench.cli.scaffold_measured_inputs:main"
+orbench-validate-measured = "orchestratebench.cli.validate_measured_input:main"
+
 [project.urls]
 Repository = "https://github.com/anote-ai/Research-OrchestrateBench"
 "Design Doc" = "https://github.com/anote-ai/Research-OrchestrateBench/blob/main/DESIGN_DOC.md"
